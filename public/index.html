@@ -109,19 +109,19 @@ async function _set(k,v){
 async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};if(d.golfers)S.golfers=d.golfers;if(d.entries)S.entries=d.entries;}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}S.loaded=true;R();}
 async function save(){await _set(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));}
 async function checkPin(){
-  if(_useAPI){try{const r=await fetch('/api/pin');const d=await r.json();S.pinIsNew=!d.exists;S.pinChecked=true;R();return;}catch(e){}}
-  if(!_PIN){const p=await _get(SKEY+"-pin");if(p)_PIN=p;}S.pinIsNew=!_PIN;S.pinChecked=true;R();
+  if(!_PIN){try{const p=localStorage.getItem(SKEY+"-pin");if(p)_PIN=p;}catch(e){}}
+  S.pinIsNew=!_PIN;S.pinChecked=true;R();
 }
 async function submitPin(pin,conf){
   if(S.pinIsNew){
     if(pin.length<4){S.pinErr="PIN must be at least 4 characters";R();return;}
     if(pin!==conf){S.pinErr="PINs don't match";R();return;}
     _PIN=pin;
-    if(_useAPI){try{await fetch('/api/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'set',pin})});}catch(e){}}
-    await _set(SKEY+"-pin",pin);S.isAdmin=true;S.view='setup';S.pinErr="";R();
+    try{localStorage.setItem(SKEY+"-pin",pin);}catch(e){}
+    S.isAdmin=true;S.view='setup';S.pinErr="";R();
   } else {
-    if(_useAPI){try{const r=await fetch('/api/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check',pin})});const d=await r.json();if(d.ok){_PIN=pin;S.isAdmin=true;S.view='setup';S.pinErr="";R();return;}else{S.pinErr="Wrong PIN";R();return;}}catch(e){}}
-    if(pin===_PIN){S.isAdmin=true;S.view='setup';S.pinErr="";R();}else{S.pinErr="Wrong PIN";R();}
+    if(pin===_PIN){S.isAdmin=true;S.view='setup';S.pinErr="";R();}
+    else{S.pinErr="Wrong PIN";R();}
   }
 }
 
