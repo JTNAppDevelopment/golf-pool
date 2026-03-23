@@ -16,15 +16,21 @@ export default async function handler(req, res) {
       const d = await r.json();
       const val = d.result;
       if (!val) return res.status(200).json({ config: null, golfers: [], entries: [] });
-      return res.status(200).json(typeof val === 'string' ? JSON.parse(val) : val);
+      try {
+        const parsed = typeof val === 'string' ? JSON.parse(val) : val;
+        return res.status(200).json(parsed);
+      } catch(e) {
+        return res.status(200).json({ config: null, golfers: [], entries: [] });
+      }
     }
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-      const r = await fetch(`${url}/set/${KEY}`, {
+      const r = await fetch(`${url}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify([body])
+        body: JSON.stringify(["SET", KEY, body])
       });
+      const d = await r.json();
       return res.status(200).json({ ok: true });
     }
     return res.status(405).json({ error: 'Method not allowed' });
