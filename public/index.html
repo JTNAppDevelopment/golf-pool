@@ -75,11 +75,12 @@ td.left { text-align: left; }
 .qr-print-card .tagline { color: #006747; font-weight: 700; font-size: 16px; margin-top: 16px; }
 @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { position: absolute; left: 0; top: 0; width: 100%; } }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" async></script>
 </head>
 <body>
 <div id="app"></div>
 <script>
+try {
 const SKEY="golf-pool-v1";
 const DEF={name:"2025 Masters",course:"Augusta National Golf Club",par:72,numPicks:5,mainFee:100,pickFee:15,splits:[50,30,20],locked:false,deadline:"",winnerGolfer:"",winnerScore:null,publishedRounds:[false,false,false,false],appUrl:"",venmoHandle:"",zelleHandle:"",acceptCash:true,commissionerName:""};
 let S={mode:null,isAdmin:false,view:"leaderboard",config:{...DEF},golfers:[],entries:[],loaded:false,pinChecked:false,pinIsNew:false,pinErr:"",successMsg:"",editIdx:null,playerEmail:null,syncStatus:'',syncError:'',syncData:null,syncMatches:null,syncTournament:''};
@@ -252,7 +253,7 @@ function rSetup(){
     const url=qrInp.value.trim();if(!url){alert('Enter a URL first');return;}
     S.config.appUrl=url;save();
     const qrTarget=document.getElementById('qr-target');if(qrTarget)qrTarget.innerHTML='';
-    new QRCode(document.getElementById('qr-target'),{text:url,width:200,height:200,colorDark:'#006747',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    if(typeof QRCode!=='undefined')new QRCode(document.getElementById('qr-target'),{text:url,width:200,height:200,colorDark:'#006747',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
     document.getElementById('qr-display').style.display='flex';
   }});qrGenBtn.textContent='Generate QR';
   qrUrlRow.append(qrInp,qrGenBtn);qrSec.append(qrUrlRow);
@@ -273,7 +274,7 @@ function rSetup(){
   card.append(qrSec);
 
   // Auto-generate QR if URL exists
-  if(S.config.appUrl){setTimeout(()=>{const t=document.getElementById('qr-target');if(t&&!t.hasChildNodes()){new QRCode(t,{text:S.config.appUrl,width:200,height:200,colorDark:'#006747',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});}},50);}
+  if(S.config.appUrl){setTimeout(()=>{const t=document.getElementById('qr-target');if(t&&!t.hasChildNodes()){if(typeof QRCode!=='undefined')new QRCode(t,{text:S.config.appUrl,width:200,height:200,colorDark:'#006747',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});}},50);}
 
   return card;
 }
@@ -704,7 +705,7 @@ function showQRFullscreen(){
   const inst=document.createElement('p');inst.style.cssText='color:#666;font-size:20px;font-family:Georgia,serif;margin:24px 0 0;';inst.textContent='Scan to enter the pool';
   const tap=document.createElement('p');tap.style.cssText='color:#ccc;font-size:14px;font-family:Georgia,serif;margin:32px 0 0;';tap.textContent='Tap anywhere to close';
   ov.append(logoDiv,title,sub,qr,inst,tap);document.body.append(ov);
-  new QRCode(qr,{text:S.config.appUrl,width:300,height:300,colorDark:'#006747',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+  if(typeof QRCode!=='undefined')new QRCode(qr,{text:S.config.appUrl,width:300,height:300,colorDark:'#006747',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
 }
 
 
@@ -1456,6 +1457,7 @@ function R(){
   app.append(page);
 }
 load();
+} catch(e) { document.getElementById('app').innerHTML = '<div style="padding:40px;color:red;font-size:16px;">Error: ' + e.message + '<br><br>' + e.stack + '</div>'; }
 </script>
 </body>
 </html>
