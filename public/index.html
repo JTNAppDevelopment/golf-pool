@@ -107,7 +107,7 @@ async function _set(k,v){
   if(_useAPI&&k===SKEY){try{await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:v});}catch(e){}}
   try{localStorage.setItem(k,v);}catch(e){}
 }
-async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};if(d.golfers)S.golfers=d.golfers;if(d.entries)S.entries=d.entries;}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}S.loaded=true;R();}
+async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}S.loaded=true;R();}
 async function save(){await _set(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));}
 async function checkPin(){
   if(!_PIN){try{const p=localStorage.getItem(SKEY+"-pin");if(p)_PIN=p;}catch(e){}}
