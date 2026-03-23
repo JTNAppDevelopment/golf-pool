@@ -878,6 +878,33 @@ async function espnSync(){
   }catch(e){S.syncStatus='error';S.syncError='Sync failed: '+e.message;R();}
 }
 
+async function espnImportField(){
+  S.syncStatus='loading';S.syncError='';R();
+  try{
+    let data;
+    const proxyUrl='/api/espn';
+    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+    try{const r=await fetch(proxyUrl);data=await r.json();}
+    catch(e){try{const r2=await fetch(directUrl);data=await r2.json();}catch(e2){}}
+    if(!data||!data.events||!data.events.length){S.syncStatus=null;alert('No active tournament found on ESPN.');R();return;}
+    const evt=data.events[0];
+    const comp=evt.competitions&&evt.competitions[0];
+    if(!comp||!comp.competitors){S.syncStatus=null;alert('No competitor data found.');R();return;}
+    const names=[];
+    comp.competitors.forEach(c=>{
+      const full=c.athlete&&c.athlete.displayName?c.athlete.displayName:'';
+      const last=full.split(' ').slice(-1)[0];
+      if(last&&!S.golfers.find(g=>g.name.toLowerCase()===last.toLowerCase()))
+        names.push(last);
+    });
+    if(!names.length){alert('All golfers already in your field (matched '+comp.competitors.length+' players).');S.syncStatus=null;R();return;}
+    if(!confirm('Import '+names.length+' golfers from '+evt.name+'?')){S.syncStatus=null;R();return;}
+    names.forEach(n=>{S.golfers.push({name:n,scores:[null,null,null,null],cutStatus:''});});
+    S.golfers.sort((a,b)=>a.name.localeCompare(b.name));
+    save();S.syncStatus=null;S.successMsg=names.length+' golfers imported!';R();
+  }catch(e){S.syncStatus=null;alert('Failed: '+e.message);R();}
+}
+
 function applySyncData(){
   S.syncMatches.forEach(m=>{
     [0,1,2,3].forEach(r=>{if(m.espn.rounds[r]!=null)S.golfers[m.localIdx].scores[r]=m.espn.rounds[r];});
