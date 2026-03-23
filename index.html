@@ -283,7 +283,10 @@ function rGolfers(){
   const card=$('div',{className:'card'});const hdr=$('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}});
   hdr.append($('h2',{className:'hd'},'Golfer field ('+S.golfers.length+')'));
   const bd=$('div',{style:{display:'none',marginTop:'12px',padding:'16px',background:'var(--gray)',borderRadius:'8px'}});
-  hdr.append($('button',{className:'btn btn-o',style:{fontSize:'12px'},onClick:()=>{bd.style.display=bd.style.display==='none'?'block':'none';}},'Bulk add'));
+  const hdrBtns=$('div',{style:{display:'flex',gap:'8px'}});
+  hdrBtns.append($('button',{className:'btn btn-g',style:{fontSize:'12px'},onClick:espnImportField},'\u26f3 Import from ESPN'));
+  hdrBtns.append($('button',{className:'btn btn-o',style:{fontSize:'12px'},onClick:()=>{bd.style.display=bd.style.display==='none'?'block':'none';}},'Bulk add'));
+  hdr.append(hdrBtns);
   card.append(hdr);
   const ta=$('textarea',{style:{height:'80px'},placeholder:'Paste names — one per line or comma-separated'});
   bd.append(ta,$('button',{className:'btn btn-p',style:{marginTop:'8px'},onClick:()=>{
