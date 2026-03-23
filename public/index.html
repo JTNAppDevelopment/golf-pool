@@ -135,7 +135,7 @@ function scoring(){
     const mc=pd.filter(p=>p.isMC).length,elim=mc>=2;let b4=null,drop=null;
     if(!elim){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;b4=so.slice(1).reduce((s,p)=>s+p.total,0);}}
     const vp=b4!=null?b4-S.config.par*4*rp:null,tbp=e.tbPrediction!=null&&e.tbPrediction!==""?Number(e.tbPrediction):null;
-    const tbv=tbp!=null&&wvp!=null&&tbp<=wvp,tbd=tbv?wvp-tbp:9999,comp=b4!=null?b4*10000+tbd:9999999;
+    const tbv=tbp!=null&&wvp!=null&&tbp>=wvp,tbd=tbp!=null&&wvp!=null?Math.abs(wvp-tbp):9999,comp=b4!=null?b4*1000000+(tbv?0:500000)+tbd:9999999999;
     return{...e,playerData:pd,mcCount:mc,eliminated:elim,best4:b4,droppedPlayer:drop,vsPar:vp,tbPred:tbp,tbValid:tbv,tbDiff:tbd,composite:comp};
   });
   sc.sort((a,b)=>a.composite-b.composite);let rank=1;
@@ -359,7 +359,33 @@ function rEntryForm(isA){
   }
   for(let i=0;i<np;i++){const d=$('div',null,$('label',{className:'lbl'},'Pick '+(i+1)));const sel=$('select');sel.append($('option',{value:''},'Select golfer...'));gN.forEach(n=>{const o=$('option',{value:n},n);if(ip[i]===n)o.selected=true;sel.append(o);});sel.addEventListener('change',updatePickOptions);d.append(sel);g.append(d);sels.push(sel);}
   setTimeout(updatePickOptions,0);
-  const tbi=$('input',{type:'number',value:iTb,placeholder:'e.g. -12'});g.append($('div',null,$('label',{className:'lbl'},"Tiebreaker: winner's under-par total (required)"),tbi));
+  let tbVal=iTb!=null&&iTb!==''?String(iTb):null;
+  const tbDiv=$('div',{style:{gridColumn:'1 / -1'}});
+  tbDiv.append($('label',{className:'lbl'},"Tiebreaker: predict winner's score vs par (required)"));
+  const tbGrid=$('div',{style:{display:'flex',gap:'8px',marginTop:'4px'}});
+  const tbColL=$('div',{style:{flex:'1'}});
+  tbColL.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'Over / Even'));
+  for(let v=10;v>=0;v--){
+    const label=v>0?'+'+v:'E';
+    const val=v>0?String(v):'0';
+    const btn=$('button',{style:{display:'block',width:'100%',padding:'6px 4px',marginBottom:'2px',fontSize:'13px',fontWeight:'600',border:'2px solid '+(tbVal===val?'var(--gold)':'var(--border)'),borderRadius:'4px',background:tbVal===val?'var(--gold)':'white',color:tbVal===val?'#333':'var(--dk)',cursor:'pointer'}});
+    btn.textContent=label;
+    btn.addEventListener('click',(ev)=>{ev.preventDefault();tbVal=val;tbGrid.querySelectorAll('button').forEach(b=>{b.style.border='2px solid var(--border)';b.style.background='white';b.style.color='var(--dk)';});btn.style.border='2px solid var(--gold)';btn.style.background='var(--gold)';btn.style.color='#333';});
+    tbColL.append(btn);
+  }
+  const tbColR=$('div',{style:{flex:'1'}});
+  tbColR.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'Under Par'));
+  for(let v=-1;v>=-25;v--){
+    const label=String(v);
+    const val=String(v);
+    const btn=$('button',{style:{display:'block',width:'100%',padding:'6px 4px',marginBottom:'2px',fontSize:'13px',fontWeight:'600',border:'2px solid '+(tbVal===val?'var(--gold)':'var(--border)'),borderRadius:'4px',background:tbVal===val?'var(--gold)':'white',color:tbVal===val?'#333':'var(--dk)',cursor:'pointer'}});
+    btn.textContent=label;
+    btn.addEventListener('click',(ev)=>{ev.preventDefault();tbVal=val;tbGrid.querySelectorAll('button').forEach(b=>{b.style.border='2px solid var(--border)';b.style.background='white';b.style.color='var(--dk)';});btn.style.border='2px solid var(--gold)';btn.style.background='var(--gold)';btn.style.color='#333';});
+    tbColR.append(btn);
+  }
+  tbGrid.append(tbColL,tbColR);tbDiv.append(tbGrid);
+  const tbi={get value(){return tbVal||'';}};
+  g.append(tbDiv);
   const pws=$('select');pws.append($('option',{value:''},'Select golfer (optional)...'));gN.forEach(n=>{const o=$('option',{value:n},n);if(iPw===n)o.selected=true;pws.append(o);});
   g.append($('div',null,$('label',{className:'lbl'},'Pick the winner ($'+S.config.pickFee+')'),pws));
 
@@ -555,11 +581,11 @@ function rLeaderboard(){
 
 function rScores(){
   const frag=document.createDocumentFragment();
+  const sc=scoring();
 
   // ESPN Sync Card
   const syncCard=$('div',{className:'card'});
-  syncCard.append($('h2',{className:'hd'},'Sync scores from ESPN'));
-  syncCard.append($('p',{className:'sub',style:{margin:'4px 0 12px'}},'Pull live round scores and cut status. Review changes before applying.'));
+  syncCard.append($('h2',{className:'hd'},'Score Sync'));
 
   if(S.syncStatus==='loading'){
     syncCard.append($('div',{style:{textAlign:'center',padding:'20px',color:'var(--med)'}},'Fetching scores from ESPN...'));
@@ -567,7 +593,7 @@ function rScores(){
     syncCard.append($('div',{style:{padding:'12px 16px',background:'var(--lt-red)',borderRadius:'6px',marginBottom:'12px'}},$('span',{style:{color:'var(--red)',fontWeight:'600'}},S.syncError)));
     syncCard.append($('button',{className:'btn btn-p',onClick:espnSync},'Try again'));
   } else if(S.syncStatus==='preview'&&S.syncMatches){
-    syncCard.append($('div',{style:{padding:'12px 16px',background:'var(--lt-green)',borderRadius:'6px',marginBottom:'12px'}},$('span',{style:{color:'var(--green)',fontWeight:'600'}},'Tournament: '+S.syncTournament+' — '+S.syncMatches.length+' updates found')));
+    syncCard.append($('div',{style:{padding:'12px 16px',background:'var(--lt-green)',borderRadius:'6px',marginBottom:'12px'}},$('span',{style:{color:'var(--green)',fontWeight:'600'}},'Tournament: '+S.syncTournament+' \u2014 '+S.syncMatches.length+' updates found')));
     if(S.syncMatches.length===0){
       syncCard.append($('p',{className:'sub'},'All scores are already up to date.'));
     } else {
@@ -583,29 +609,127 @@ function rScores(){
       stbl.append(stb);syncCard.append($('div',{className:'overflow-x',style:{marginBottom:'12px'}},stbl));
       const btns=$('div',{style:{display:'flex',gap:'8px'}});
       btns.append($('button',{className:'btn btn-g',onClick:applySyncData},'Apply '+S.syncMatches.length+' updates'));
-      btns.append($('button',{className:'btn btn-o',onClick:()=>{S.syncStatus='';S.syncMatches=null;R();}},'Cancel'));
+      btns.append($('button',{className:'btn btn-o',onClick:()=>{S.syncStatus=null;S.syncMatches=null;R();}},'Cancel'));
       syncCard.append(btns);
     }
   } else if(S.syncStatus==='applied'){
-    syncCard.append($('div',{style:{padding:'12px 16px',background:'var(--lt-green)',borderRadius:'6px',marginBottom:'12px'}},$('span',{style:{color:'var(--green)',fontWeight:'600'}},'Scores updated. Now publish the round(s) below to show players.')));
-    syncCard.append($('button',{className:'btn btn-p',onClick:()=>{S.syncStatus='';R();}},'Done'));
+    syncCard.append($('div',{style:{padding:'12px 16px',background:'var(--lt-green)',borderRadius:'6px',marginBottom:'12px'}},$('span',{style:{color:'var(--green)',fontWeight:'600'}},'Scores updated! Remember to publish the round.')));
+    syncCard.append($('button',{className:'btn btn-p',onClick:()=>{S.syncStatus=null;R();}},'OK'));
   } else {
-    if(S.golfers.length===0){syncCard.append($('p',{style:{color:'var(--red)',fontSize:'13px'}},'Add golfers to the field first.'));}
-    else{syncCard.append($('button',{className:'btn btn-g',style:{fontSize:'16px',padding:'12px 32px'},onClick:espnSync},'Sync scores from ESPN'));}
+    syncCard.append($('button',{className:'btn btn-p',style:{fontSize:'16px',padding:'14px 28px'},onClick:espnSync},'\u26f3 Sync scores from ESPN'));
   }
   frag.append(syncCard);
 
-  // Publish controls
-  const card=$('div',{className:'card'});card.append($('h2',{className:'hd'},'Publish controls'));
-  card.append($('p',{className:'sub',style:{margin:'8px 0 16px'}},'Players only see published rounds.'));
-  const g=$('div',{className:'grid4'});
-  ['Round 1','Round 2','Round 3','Round 4'].forEach((l,i)=>{const on=S.config.publishedRounds[i];
-    const box=$('div',{className:'pub-box'+(on?' on':''),onClick:()=>{S.config.publishedRounds[i]=!on;save();R();}});
-    box.append($('div',{style:{fontSize:'14px',fontWeight:'700',color:on?'var(--green)':'var(--med)'}},l),$('div',{style:{fontSize:'12px',marginTop:'4px',color:on?'var(--green)':'var(--med)'}},on?'Published':'Hidden'));
-    g.append(box);});card.append(g);frag.append(card);
+  // Publish Rounds Card
+  const pubCard=$('div',{className:'card'});
+  pubCard.append($('h2',{className:'hd',style:{fontSize:'18px'}},'Publish rounds'));
+  pubCard.append($('p',{className:'sub',style:{margin:'4px 0 12px'}},'Toggle which rounds are visible to players.'));
+  const pubRow=$('div',{style:{display:'flex',gap:'12px',flexWrap:'wrap'}});
+  [0,1,2,3].forEach(r=>{
+    const hasData=S.golfers.some(g=>g.scores[r]!=null&&g.scores[r]!=='');
+    const isOn=S.config.publishedRounds&&S.config.publishedRounds[r];
+    const box=$('div',{className:'pub-box'+(isOn?' on':''),style:{flex:'1',minWidth:'100px',padding:'12px',borderRadius:'8px',border:'2px solid '+(isOn?'var(--green)':'var(--border)'),background:isOn?'var(--lt-green)':'white',textAlign:'center',cursor:hasData?'pointer':'default',opacity:hasData?1:0.4}});
+    box.append($('div',{style:{fontWeight:'700',fontSize:'16px'}},'R'+(r+1)));
+    box.append($('div',{style:{fontSize:'12px',color:'var(--med)',marginTop:'4px'}},hasData?(isOn?'Published':'Not published'):'No data'));
+    if(hasData){box.addEventListener('click',()=>{if(!S.config.publishedRounds)S.config.publishedRounds=[false,false,false,false];S.config.publishedRounds[r]=!S.config.publishedRounds[r];save();R();});}
+    pubRow.append(box);
+  });
+  pubCard.append(pubRow);
+
+  // Winner auto-detected
+  if(S.config.winnerGolfer){
+    const wvp=S.config.winnerScore-S.config.par*4;
+    pubCard.append($('div',{style:{marginTop:'12px',padding:'10px 16px',background:'var(--lt-green)',borderRadius:'6px',fontSize:'13px'}},
+      $('span',{style:{fontWeight:'700',color:'var(--green)'}},'\ud83c\udfc6 Winner: '+S.config.winnerGolfer+' ('+S.config.winnerScore+', '+(wvp>=0?'+':'')+wvp+')')));
+  }
+  frag.append(pubCard);
+
+  // Field Intelligence
+  const fiCard=$('div',{className:'card'});
+  fiCard.append($('h2',{className:'hd',style:{fontSize:'18px'}},'Field intelligence'));
+  const gMap={};S.golfers.forEach(g=>gMap[g.name]=g);
+
+  // Calc golfer positions
+  const pubR=[0,1,2,3].filter(r=>S.config.publishedRounds&&S.config.publishedRounds[r]);
+  const gTotals=S.golfers.filter(g=>g.cutStatus!=='MC').map(g=>{
+    let t=0;pubR.forEach(r=>{t+=(g.scores[r]||0);});
+    return{name:g.name,total:t,vsPar:t-S.config.par*pubR.length};
+  }).filter(g=>g.total>0);
+  gTotals.sort((a,b)=>a.total-b.total);
+  let gRank=1;
+  gTotals.forEach((g,i)=>{if(i>0&&g.total===gTotals[i-1].total)g.rank=gTotals[i-1].rank;else g.rank=gRank;gRank=i+2;
+    g.pos=(gTotals.filter(x=>x.total===g.total).length>1?'T':'')+g.rank;
+  });
+  const gPosMap={};gTotals.forEach(g=>gPosMap[g.name]=g);
+
+  // Count picks per golfer
+  const pickCounts={},ptwCounts={};
+  S.entries.forEach(e=>{
+    e.picks.forEach(p=>{pickCounts[p]=(pickCounts[p]||0)+1;});
+    if(e.pickWinner)ptwCounts[e.pickWinner]=(ptwCounts[e.pickWinner]||0)+1;
+  });
+
+  // Top 10 entries
+  const top10=sc.scored.filter(e=>e.rank!=null&&e.rank<=10);
+  const top10Golfers={};
+  top10.forEach(e=>{e.picks.forEach(p=>{top10Golfers[p]=(top10Golfers[p]||0)+1;});});
+
+  // Build table sorted by most picked
+  const fiData=S.golfers.map(g=>{
+    const gp=gPosMap[g.name];
+    return{name:g.name,pos:gp?gp.pos:g.cutStatus==='MC'?'MC':'--',vsPar:gp?(gp.vsPar>=0?'+':'')+gp.vsPar:'--',picked:pickCounts[g.name]||0,ptw:ptwCounts[g.name]||0,inTop10:top10Golfers[g.name]||0};
+  }).filter(g=>g.picked>0).sort((a,b)=>b.picked-a.picked);
+
+  if(fiData.length){
+    const ftbl=$('table');
+    ftbl.append($('thead',null,$('tr',null,
+      $('th',{className:'left'},'Golfer'),
+      $('th',null,'Position'),
+      $('th',null,'vs Par'),
+      $('th',null,'Times Picked'),
+      $('th',null,'PTW'),
+      $('th',null,'In Top 10')
+    )));
+    const ftb=$('tbody');
+    fiData.forEach(g=>{
+      const row=$('tr');
+      row.append($('td',{className:'left',style:{fontWeight:'600'}},g.name));
+      row.append($('td',null,g.pos));
+      row.append($('td',{style:{color:typeof g.vsPar==='string'&&g.vsPar.startsWith('-')?'var(--green)':'var(--dk)'}},g.vsPar));
+      row.append($('td',null,String(g.picked)));
+      row.append($('td',{style:{color:g.ptw?'var(--gold)':'var(--med)',fontWeight:g.ptw?'700':'400'}},String(g.ptw)));
+      row.append($('td',{style:{color:g.inTop10?'var(--green)':'var(--med)',fontWeight:g.inTop10?'700':'400'}},String(g.inTop10)));
+      ftb.append(row);
+    });
+    ftbl.append(ftb);fiCard.append($('div',{className:'overflow-x'},ftbl));
+  } else fiCard.append($('p',{className:'sub'},'No entries yet.'));
+  frag.append(fiCard);
+
+  // Top 10 Entries Snapshot
+  if(sc.scored.filter(e=>e.rank!=null).length>0){
+    const t10Card=$('div',{className:'card'});
+    t10Card.append($('h2',{className:'hd',style:{fontSize:'18px'}},'Top 10 entries'));
+    const t10tbl=$('table');
+    t10tbl.append($('thead',null,$('tr',null,$('th',null,'#'),$('th',{className:'left'},'Participant'),$('th',null,'Score'),$('th',null,'vs Par'),$('th',null,'+PP'),$('th',null,'Cuts'))));
+    const t10tb=$('tbody');
+    const pp=calcPerfectPick();
+    sc.scored.filter(e=>e.rank!=null&&e.rank<=10).forEach(e=>{
+      const row=$('tr',{style:{background:e.rank<=3?'var(--lt-green)':'transparent'}});
+      row.append($('td',{style:{fontWeight:'700'}},String(e.rank)));
+      row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant));
+      row.append($('td',{style:{fontWeight:'700'}},e.best4!=null?String(e.best4):'--'));
+      row.append($('td',{style:{color:e.vsPar<0?'var(--green)':'var(--dk)'}},e.vsPar!=null?(e.vsPar>=0?'+':'')+e.vsPar:'--'));
+      const ppDiff=e.best4!=null&&pp.score>0?e.best4-pp.score:null;
+      row.append($('td',null,ppDiff!=null?'+'+ppDiff:'--'));
+      row.append($('td',{style:{color:e.mcCount?'var(--red)':'var(--med)'}},e.mcCount?e.mcCount+' MC':'0'));
+      t10tb.append(row);
+    });
+    t10tbl.append(t10tb);t10Card.append($('div',{className:'overflow-x'},t10tbl));
+    frag.append(t10Card);
+  }
+
   return frag;
 }
-
 function rExposure(){
   const card=$('div',{className:'card'});card.append($('h2',{className:'hd'},'Golfer exposure'));
   const data=S.golfers.map(g=>({...g,count:S.entries.reduce((c,e)=>c+(e.picks.includes(g.name)?1:0),0),pct:S.entries.length>0?Math.round(S.entries.reduce((c,e)=>c+(e.picks.includes(g.name)?1:0),0)/S.entries.length*100):0})).sort((a,b)=>b.count-a.count);
@@ -665,7 +789,17 @@ function rPayouts(){
       row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant),$('td',null,e.pickWinner),$('td',null,$('span',{className:'badge '+(ok?'bg-lg':'bg-lr')},ok?'YES':'NO')),$('td',{style:{fontWeight:'700',color:ok?'var(--green)':'inherit'}},ok?'$'+Math.round(pwo).toLocaleString():''));
       tb2.append(row);});t2.append(tb2);pw.append(t2);
   }else if(!S.config.winnerGolfer)pw.append($('p',{className:'sub'},'Set winning golfer in Setup to resolve.'));
-  frag.append(pw);return frag;
+  frag.append(pw);// Print buttons
+  const printCard=$('div',{className:'card'});
+  printCard.append($('h2',{className:'hd',style:{fontSize:'18px'}},'Print'));
+  const printBtns=$('div',{style:{display:'flex',gap:'12px',flexWrap:'wrap'}});
+  const wsBtn=$('button',{className:'btn btn-g',style:{fontSize:'14px',padding:'10px 20px'},onClick:printWinnerSlips});wsBtn.textContent='\ud83c\udfc6 Print winner slips';
+  const fpBtn=$('button',{className:'btn btn-o',style:{fontSize:'14px',padding:'10px 20px'},onClick:printFullPayouts});fpBtn.textContent='\ud83d\udcca Print full payouts';
+  printBtns.append(wsBtn,fpBtn);
+  printCard.append(printBtns);
+  frag.append(printCard);
+
+  return frag;
 }
 
 function printQRCard(){
@@ -761,7 +895,18 @@ function applySyncData(){
     if(m.espn.isCut)S.golfers[m.localIdx].cutStatus='MC';
     else if(S.golfers[m.localIdx].cutStatus!=='MC'&&m.espn.rounds.filter(r=>r!=null).length>=2)S.golfers[m.localIdx].cutStatus='MADE';
   });
-  S.syncStatus='applied';save();R();
+  S.syncStatus='applied';
+  // Auto-populate winner after R4
+  const allR4=S.golfers.filter(g=>g.cutStatus!=='MC'&&g.scores[3]!=null&&g.scores[3]!=='');
+  if(allR4.length>0){
+    const withTotals=allR4.map(g=>({name:g.name,total:g.scores.reduce((s,v)=>s+(v||0),0)}));
+    withTotals.sort((a,b)=>a.total-b.total);
+    if(withTotals[0]){
+      S.config.winnerGolfer=withTotals[0].name;
+      S.config.winnerScore=withTotals[0].total;
+    }
+  }
+  save();R();
 }
 
 
@@ -914,7 +1059,25 @@ function rAnnounce(){
   const tmpl=[
     {label:'Round complete',subj:'Scores updated',body:'Round scores have been updated. Check the leaderboard to see where you stand!'},
     {label:'Cut day',subj:'The cut has been made',body:'The cut has been made. Check your entries to see if you survived!'},
-    {label:'Final results',subj:'Final results are in!',body:'The tournament is over and final results are posted. Check the leaderboard to see the winners and payout details.'},
+    {label:'Final results',subj:'Final results are in!',body:(function(){
+      const sc2=scoring();const pp2=calcPerfectPick();
+      let txt='The tournament is over! Final results:\n\n';
+      const winners=sc2.scored.filter(e=>e.winnings>0).sort((a,b)=>a.rank-b.rank);
+      winners.forEach(e=>{
+        txt+=e.rank+'. '+e.participant+' - $'+Math.round(e.winnings)+'\n';
+      });
+      if(S.config.winnerGolfer){
+        const wvp2=S.config.winnerScore-S.config.par*4;
+        txt+='\nTournament winner: '+S.config.winnerGolfer+' ('+(wvp2>=0?'+':'')+wvp2+')';
+      }
+      const ptwWinners=sc2.scored.filter(e=>e.pickWinner===S.config.winnerGolfer);
+      if(ptwWinners.length){
+        const ptwPool=S.entries.filter(e=>e.pickWinner).length*S.config.pickFee;
+        txt+='\nPick the Winner: '+ptwWinners.map(e=>e.participant).join(', ')+' ($'+Math.round(ptwPool/ptwWinners.length)+' each)';
+      }
+      txt+='\n\nCheck the full leaderboard for complete standings.';
+      return txt;
+    })()},
     {label:'Custom',subj:'',body:''}
   ];
 
@@ -1107,7 +1270,7 @@ function buildWhatIfLeaderboard(){
     const pd=e.picks.map(pn=>{
       const g=gMap[pn];
       if(!g)return{name:pn,total:0,isMC:false};
-      return{name:pn,total:g.scores.reduce((s,v)=>s+(v||0),0),isMC:g.cutStatus==='MC'};
+      const _ws=S._wif&&S._wif[pn]?S._wif[pn]:g.scores;const _wc=S._wifCuts&&S._wifCuts[pn]?S._wifCuts[pn]:g.cutStatus;return{name:pn,total:_ws.reduce((s,v)=>s+(v||0),0),isMC:_wc==='MC'};
     });
     const mc=pd.filter(p=>p.isMC).length,elim=mc>=2;
     let b4=null,drop=null;
@@ -1183,15 +1346,18 @@ function updateWhatIfLeaderboard(){
 }
 
 
-function calcPerfectPick(golferSource){
+function calcPerfectPick(golferSource,pubRounds){
   const gs=golferSource||S.golfers;
+  const pr=pubRounds||[0,1,2,3].filter(r=>S.config.publishedRounds&&S.config.publishedRounds[r]);
+  if(!pr.length)return{score:0,names:[]};
   const made=gs.filter(g=>g.cutStatus!=='MC');
-  const totals=made.map(g=>({name:g.name,total:g.scores.reduce((s,v)=>s+(v||0),0)})).filter(t=>t.total>0);
+  const totals=made.map(g=>{
+    let t=0;pr.forEach(r=>{t+=(g.scores[r]||0);});
+    return{name:g.name,total:t};
+  }).filter(t=>t.total>0);
   totals.sort((a,b)=>a.total-b.total);
   const best4=totals.slice(0,4);
-  const ppScore=best4.reduce((s,g)=>s+g.total,0);
-  const ppNames=best4.map(g=>g.name);
-  return{score:ppScore,names:ppNames};
+  return{score:best4.reduce((s,g)=>s+g.total,0),names:best4.map(g=>g.name)};
 }
 
 
@@ -1432,6 +1598,75 @@ function printCashReceipts(count){
     w.document.write('</div>');
   }
   w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+
+function printWinnerSlips(){
+  const sc2=scoring();
+  const winners=sc2.scored.filter(e=>e.winnings>0).sort((a,b)=>a.rank-b.rank);
+  if(!winners.length){alert('No winners to print.');return;}
+  const w=window.open('','_blank','width=850,height=1100');
+  w.document.write('<!DOCTYPE html><html><head><title>Winner Slips</title><style>');
+  w.document.write('body{font-family:Arial,sans-serif;margin:0;padding:0;}');
+  w.document.write('.slip{width:7in;margin:0.3in auto;padding:24px 32px;border:2px solid #006747;border-radius:12px;page-break-inside:avoid;}');
+  w.document.write('.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}');
+  w.document.write('.logo-row img{width:40px;height:40px;}');
+  w.document.write('.logo-row span{font-family:Georgia,serif;font-weight:700;color:#006747;font-size:20px;}');
+  w.document.write('.congrats{font-size:22px;font-weight:700;color:#006747;margin:8px 0;}');
+  w.document.write('.detail{font-size:15px;margin:6px 0;color:#333;}');
+  w.document.write('.amount{font-size:28px;font-weight:700;color:#006747;margin:12px 0;}');
+  w.document.write('.sig{margin-top:24px;border-top:1px solid #ccc;padding-top:12px;display:flex;justify-content:space-between;}');
+  w.document.write('.sig-line{width:45%;border-bottom:1px solid #999;padding-bottom:4px;font-size:12px;color:#999;}');
+  w.document.write('@media print{.slip{margin:0.2in auto;}}');
+  w.document.write('</style></head><body>');
+  const c=S.config;
+  winners.forEach(e=>{
+    const tipAmt=e.tipType==='pct'&&e.tipValue?(e.winnings*Number(e.tipValue)/100):e.tipType==='flat'&&e.tipValue?Number(e.tipValue):0;
+    const net=e.winnings-tipAmt;
+    const ordinal=e.rank===1?'1st':e.rank===2?'2nd':e.rank===3?'3rd':e.rank+'th';
+    w.document.write('<div class="slip">');
+    w.document.write('<div class="logo-row"><img src="'+CCC_LOGO+'" /><span>best4.golf</span></div>');
+    w.document.write('<div style="font-size:14px;color:#666;">'+c.name+'</div>');
+    w.document.write('<div class="congrats">Congratulations, '+e.participant+'!</div>');
+    w.document.write('<div class="detail">'+ordinal+' Place</div>');
+    w.document.write('<div class="detail">Score: '+e.best4+' ('+((e.vsPar>=0?'+':'')+e.vsPar)+')</div>');
+    w.document.write('<div class="amount">Winnings: $'+Math.round(e.winnings)+'</div>');
+    if(tipAmt>0){
+      w.document.write('<div class="detail" style="color:#999;">Tip pledge: -$'+Math.round(tipAmt)+' &rarr; Net payout: $'+Math.round(net)+'</div>');
+    }
+    w.document.write('<div class="sig"><div class="sig-line">Commissioner signature</div><div class="sig-line">Date</div></div>');
+    w.document.write('</div>');
+  });
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+function printFullPayouts(){
+  const sc2=scoring();
+  const w=window.open('','_blank','width=850,height=1100');
+  w.document.write('<!DOCTYPE html><html><head><title>Full Payouts</title><style>');
+  w.document.write('body{font-family:Arial,sans-serif;padding:0.5in;}');
+  w.document.write('h1{color:#006747;font-size:20px;}');
+  w.document.write('table{width:100%;border-collapse:collapse;margin-top:12px;}');
+  w.document.write('th{background:#006747;color:white;padding:8px 10px;text-align:left;font-size:12px;}');
+  w.document.write('td{padding:6px 10px;border-bottom:1px solid #ddd;font-size:13px;}');
+  w.document.write('tr:nth-child(even){background:#f5f5f5;}');
+  w.document.write('.winner{background:#E8F5E9 !important;font-weight:700;}');
+  w.document.write('@media print{body{padding:0.3in;}}');
+  w.document.write('</style></head><body>');
+  w.document.write('<h1>'+S.config.name+' \u2014 Full Payouts</h1>');
+  w.document.write('<p style="color:#666;font-size:13px;">Pool: $'+(S.entries.length*S.config.mainFee)+' | Entries: '+S.entries.length+' | Commissioner: '+S.config.commissionerName+'</p>');
+  w.document.write('<table><thead><tr><th>#</th><th>Participant</th><th>Score</th><th>vs Par</th><th>TB</th><th>Winnings</th><th>Tip</th><th>Net</th></tr></thead><tbody>');
+  sc2.scored.filter(e=>e.rank!=null).forEach(e=>{
+    const tipAmt=e.tipType==='pct'&&e.tipValue?(e.winnings*Number(e.tipValue)/100):e.tipType==='flat'&&e.tipValue?Number(e.tipValue):0;
+    const net=e.winnings-tipAmt;
+    const cls=e.winnings>0?'winner':'';
+    w.document.write('<tr class="'+cls+'"><td>'+e.rank+'</td><td>'+e.participant+'</td><td>'+(e.best4||'--')+'</td><td>'+(e.vsPar!=null?(e.vsPar>=0?'+':'')+e.vsPar:'--')+'</td><td>'+(e.tbPred!=null?e.tbPred:'--')+'</td><td>'+(e.winnings>0?'$'+Math.round(e.winnings):'')+'</td><td>'+(tipAmt>0?'$'+Math.round(tipAmt):'')+'</td><td>'+(e.winnings>0?'$'+Math.round(net):'')+'</td></tr>');
+  });
+  w.document.write('</tbody></table></body></html>');
   w.document.close();
   setTimeout(()=>w.print(),500);
 }
