@@ -1,5 +1,1 @@
-{
-  "name": "golf-pool",
-  "version": "1.0.0",
-  "private": true
-}
+{"name":"golf-pool","version":"1.0.0","dependencies":{"@upstash/redis":"^1.20.6"}}
