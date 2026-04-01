@@ -1,1 +1,9 @@
-{"rewrites":[{"source":"/api/data","destination":"/api/data.js"},{"source":"/((?!api).*)","destination":"/index.html"}]}
+{
+  "version": 2,
+  "routes": [
+    { "src": "/api/espn", "dest": "/api/espn.js" },
+    { "src": "/api/data",  "dest": "/api/data.js"  },
+    { "src": "/api/pin",   "dest": "/api/pin.js"   },
+    { "src": "/(.*)",      "dest": "/public/index.html" }
+  ]
+}

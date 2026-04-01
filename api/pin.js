@@ -1,31 +1,20 @@
-import { kv } from '@vercel/kv';
-
-const KEY = 'golf-pool-pin';
-
+// Vercel serverless function — commissioner PIN check
+// Set COMMISSIONER_PIN env var in Vercel project settings (never commit the value)
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  try {
-    if (req.method === 'GET') {
-      const pin = await kv.get(KEY);
-      return res.status(200).json({ exists: !!pin });
-    }
-    if (req.method === 'POST') {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      if (body.action === 'set') {
-        await kv.set(KEY, body.pin);
-        return res.status(200).json({ ok: true });
-      }
-      if (body.action === 'check') {
-        const stored = await kv.get(KEY);
-        return res.status(200).json({ ok: stored === body.pin });
-      }
-    }
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+  const { pin } = req.body || {};
+  const correctPin = process.env.COMMISSIONER_PIN;
+
+  if (!correctPin) {
+    // PIN not configured — deny all
+    return res.status(503).json({ ok: false, error: 'PIN not configured' });
   }
+
+  const ok = String(pin) === String(correctPin);
+  res.status(200).json({ ok });
 }
