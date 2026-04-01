@@ -83,6 +83,7 @@ td.left { text-align: left; }
 
 const SKEY="golf-pool-v1";
 const DEF={name:"2025 Masters",course:"Augusta National Golf Club",par:72,numPicks:5,mainFee:100,pickFee:15,splits:[50,30,20],locked:false,deadline:"",winnerGolfer:"",winnerScore:null,publishedRounds:[false,false,false,false],appUrl:"",venmoHandle:"",zelleHandle:"",acceptCash:true,commissionerName:""};
+const MASTERS_2026_FIELD=["Aberg", "Berger", "Bhatia", "Bradley", "Brennan", "Bridgeman", "Burns", "Cabrera", "Campbell", "Cantlay", "Clark", "Conners", "Couples", "Day", "DeChambeau", "Echavarria", "English", "Fang", "Fitzpatrick", "Fleetwood", "Fox", "Garcia", "Gerard", "Gotterup", "Greyserman", "Griffin", "Hall", "Harman", "Hatton", "Henley", "Herrington", "N. Hojgaard", "R. Hojgaard", "Holtz", "Homa", "Hovland", "Howell", "Im", "Jarvis", "D. Johnson", "Z. Johnson", "Kataoka", "Keefer", "M. Kim", "Si Woo Kim", "Kitayama", "Koepka", "Laopakdee", "Lee", "Li", "Lowry", "MacIntyre", "Matsuyama", "McCarty", "McIlroy", "McKibbin", "McNealy", "Mickelson", "Morikawa", "Neergaard-Petersen", "Noren", "Novak", "Olazabal", "Ortiz", "Penge", "Potgieter", "Pulcini", "Rahm", "Rai", "Reed", "Reitan", "Riley", "Rose", "Schauffele", "Scheffler", "Schwartzel", "Scott", "Singh", "Smith", "Spaun", "Spieth", "Stevens", "Straka", "Taylor", "Thomas", "Valimaki", "Watson", "Weir", "Willett", "Woodland", "Young"];
 let S={mode:null,isAdmin:false,view:"leaderboard",config:{...DEF},golfers:[],entries:[],loaded:false,pinChecked:false,pinIsNew:false,pinErr:"",successMsg:"",editIdx:null,playerEmail:null,syncStatus:'',syncError:'',syncData:null,syncMatches:null,syncTournament:''};
 
 let _PIN=null;
@@ -107,7 +108,7 @@ async function _set(k,v){
   if(_useAPI&&k===SKEY){try{await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:v});}catch(e){}}
   try{localStorage.setItem(k,v);}catch(e){}
 }
-async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}S.loaded=true;R();}
+async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}if(S.golfers.length===0){S.golfers=MASTERS_2026_FIELD.map(n=>({name:n,scores:[null,null,null,null],cutStatus:''}));save();}S.loaded=true;R();}
 async function save(){await _set(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));}
 async function checkPin(){
   if(!_PIN){try{const p=localStorage.getItem(SKEY+"-pin");if(p)_PIN=p;}catch(e){}}
@@ -282,6 +283,7 @@ function rSetup(){
 function rGolfers(){
   const card=$('div',{className:'card'});const hdr=$('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}});
   hdr.append($('h2',{className:'hd'},'Golfer field ('+S.golfers.length+')'));
+  if(S.golfers.length>0&&S.golfers.every(g=>g.scores.every(s=>s==null||s===''))){hdr.append($('p',{style:{fontSize:'12px',color:'var(--med)',marginTop:'4px'}},'Pre-loaded: 2026 Masters field. Scores are empty — safe to open entries.'));}
   const bd=$('div',{style:{display:'none',marginTop:'12px',padding:'16px',background:'var(--gray)',borderRadius:'8px'}});
   const hdrBtns=$('div',{style:{display:'flex',gap:'8px'}});
   hdrBtns.append($('button',{className:'btn btn-g',style:{fontSize:'12px'},onClick:espnImportField},'\u26f3 Import from ESPN'));
