@@ -346,20 +346,29 @@ function rEntryForm(isA){
   let selPayMethod='';
   if(hasPayInfo&&!isA){
     const payGate=$('div',{style:{marginBottom:'16px',padding:'14px 16px',background:'#FFF8E1',borderRadius:'8px',border:'2px solid var(--gold)'}});
-    payGate.append($('p',{style:{fontWeight:'700',fontSize:'13px',color:'var(--dk)',marginBottom:'10px'}},'How will you pay? (required)'));
+    payGate.append($('p',{style:{fontWeight:'700',fontSize:'13px',color:'var(--dk)',marginBottom:'4px'}},'How will you pay? (required)'));
+    payGate.append($('p',{style:{fontSize:'11px',color:'var(--med)',marginBottom:'10px'}},'Tap to select and pay. Submit your picks after payment.'));
     const payOpts=$('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap'}});
-    const makePayBtn=(label,val,bg)=>{
-      const btn=$('button',{className:'btn',style:{background:bg,color:'white',border:'none',fontSize:'12px',padding:'6px 14px'},
+    const payBtns=[];
+    const makePayBtn=(label,val,bg,href)=>{
+      const btn=$('button',{className:'btn',style:{background:bg,color:'white',border:'none',fontSize:'12px',padding:'6px 14px',opacity:'0.5',cursor:'pointer'},
         onClick:()=>{
           selPayMethod=val;
-          payOpts.querySelectorAll('button').forEach(b=>b.style.opacity='0.4');
-          btn.style.opacity='1';btn.style.outline='3px solid #333';
+          payBtns.forEach(b=>{b.style.opacity='0.5';b.style.outline='none';});
+          btn.style.opacity='1';btn.style.outline='3px solid #222';
+          if(href)window.open(href,'_blank');
         }});
-      btn.textContent=label;return btn;
+      btn.textContent=label;payBtns.push(btn);return btn;
     };
-    if(S.config.venmoHandle)payOpts.append(makePayBtn('Venmo','venmo','#008CFF'));
-    if(S.config.zelleHandle)payOpts.append(makePayBtn('Zelle','zelle','#6D1ED4'));
-    if(S.config.acceptCash)payOpts.append(makePayBtn('Cash at Grill Bar','cash','#006747'));
+    const fee=S.config.mainFee||100;
+    if(S.config.venmoHandle){
+      const vHandle=S.config.venmoHandle.replace('@','');
+      const vUrl='https://venmo.com/'+vHandle+'?txn=pay&amount='+fee+'&note='+encodeURIComponent(S.config.name+' pool entry');
+      payOpts.append(makePayBtn('Pay via Venmo','venmo','#008CFF',vUrl));}
+    if(S.config.zelleHandle){
+      payOpts.append(makePayBtn('Pay via Zelle','zelle','#6D1ED4',null));}
+    if(S.config.acceptCash){
+      payOpts.append(makePayBtn('Cash at Grill Bar','cash','#006747',null));}
     payGate.append(payOpts);
     card.append(payGate);
   };
