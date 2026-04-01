@@ -1050,6 +1050,9 @@ function rPlayerSignin(){
   try{saved=localStorage.getItem('best4-player-email');}catch(e){}
 
   if(saved){
+    // Auto-route: if no entry for this email, skip welcome screen and go to Enter
+    const _autoHasEntry=S.entries.some(function(e){return e.email&&e.email.toLowerCase()===saved.toLowerCase();});
+    if(!_autoHasEntry){S.playerEmail=saved;S.view='enter';R();return card;}
     card.append($('h2',{className:'hd'},'Welcome back'));
     const match=S.entries.find(e=>e.email&&e.email.toLowerCase()===saved.toLowerCase());
     if(match)card.append($('p',{style:{fontSize:'15px',marginTop:'8px',color:'var(--dk)'}},match.participant));
