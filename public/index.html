@@ -1574,47 +1574,60 @@ function printCashReceipts(count){
   html+='body{height:100%;font-family:Arial,sans-serif;display:flex;flex-direction:column;}';
   html+='.page{display:flex;flex-direction:column;height:100%;page-break-after:always;}';
   html+='.zone{flex:1;display:flex;align-items:center;justify-content:center;}';
-  html+='.receipt{width:7.8in;height:3.2in;border:1px solid #ccc;border-radius:6px;padding:14px 22px;display:flex;flex-direction:column;justify-content:space-between;}';
-  html+='.rh{display:flex;justify-content:space-between;align-items:flex-start;}';
-  html+='.brand{display:flex;align-items:center;gap:8px;}';
-  html+='.badge{width:32px;height:32px;background:#1B2A6B;border-radius:4px;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;font-weight:700;letter-spacing:0.5px;}';
-  html+='.bname{font-family:Georgia,serif;font-size:16px;font-weight:700;color:#006747;}';
+  /* Each zone contains a full-width receipt split left/right */
+  html+='.receipt{width:7.8in;height:3.1in;display:flex;gap:0;border:1px solid #ccc;border-radius:6px;overflow:hidden;}';
+  html+='.half{flex:1;padding:12px 16px;display:flex;flex-direction:column;justify-content:space-between;}';
+  html+='.half.commissioner{border-left:1px dashed #bbb;background:#fafafa;}';
+  html+='.copy-tag{font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#aaa;text-align:right;margin-bottom:4px;}';
+  html+='.brand{display:flex;align-items:center;gap:6px;}';
+  html+='.badge{width:26px;height:26px;background:#1B2A6B;border-radius:3px;display:flex;align-items:center;justify-content:center;color:white;font-size:8px;font-weight:700;}';
+  html+='.bname{font-family:Georgia,serif;font-size:13px;font-weight:700;color:#006747;}';
   html+='.bname span{color:#D4A017;}';
-  html+='.rnum{font-size:26px;font-weight:700;color:#006747;}';
-  html+='.tname{font-size:13px;font-weight:600;color:#222;margin-top:6px;}';
-  html+='.fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 16px;margin-top:4px;}';
-  html+='.field label{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:0.5px;display:block;margin-bottom:2px;}';
-  html+='.field .line{border-bottom:1px solid #ccc;height:20px;width:100%;}';
-  html+='.wide{grid-column:span 2;}';
-  html+='.rf{display:flex;justify-content:space-between;align-items:center;}';
-  html+='.stamp{font-size:13px;font-weight:700;color:#006747;border:2px solid #006747;padding:3px 10px;border-radius:4px;letter-spacing:0.5px;}';
-  html+='.amt{text-align:right;}';
-  html+='.amt label{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:0.5px;display:block;}';
-  html+='.amt .val{font-size:18px;font-weight:700;color:#222;}';
+  html+='.rnum{font-size:20px;font-weight:700;color:#006747;text-align:right;}';
+  html+='.tname{font-size:11px;font-weight:600;color:#333;margin-top:4px;}';
+  html+='.fields{display:flex;flex-direction:column;gap:5px;margin-top:4px;}';
+  html+='.field label{font-size:8px;text-transform:uppercase;color:#999;letter-spacing:0.5px;display:block;margin-bottom:1px;}';
+  html+='.field .line{border-bottom:1px solid #ccc;height:16px;width:100%;}';
+  html+='.row2{display:flex;gap:10px;}';
+  html+='.row2 .field{flex:1;}';
+  html+='.footer{display:flex;justify-content:space-between;align-items:center;}';
+  html+='.stamp{font-size:10px;font-weight:700;color:#006747;border:1.5px solid #006747;padding:2px 7px;border-radius:3px;}';
+  html+='.amt label{font-size:8px;text-transform:uppercase;color:#999;letter-spacing:0.5px;display:block;}';
+  html+='.amt .val{font-size:15px;font-weight:700;color:#222;}';
   html+='</style></head><body>';
+
+  function half(numStr, copyLabel) {
+    return '<div class="half'+(copyLabel==='COMMISSIONER'?' commissioner':'')+'">'
+      +'<div>'
+      +'<div class="copy-tag">'+copyLabel+' COPY</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+      +'<div class="brand"><div class="badge">CCC</div><div class="bname">best<span>4</span>.golf</div></div>'
+      +'<div class="rnum">#'+numStr+'</div>'
+      +'</div>'
+      +'<div class="tname">'+c.name+'</div>'
+      +'</div>'
+      +'<div class="fields">'
+      +'<div class="field"><label>Player name</label><div class="line"></div></div>'
+      +'<div class="row2">'
+      +'<div class="field"><label>Entry #</label><div class="line"></div></div>'
+      +'<div class="field"><label>Date</label><div class="line"></div></div>'
+      +'</div>'
+      +'<div class="field"><label>Received by</label><div class="line"></div></div>'
+      +'</div>'
+      +'<div class="footer">'
+      +'<div class="stamp">PAID — Cash at Grill Bar</div>'
+      +'<div class="amt"><label>Amount</label><div class="val">$'+c.mainFee+'</div></div>'
+      +'</div>'
+      +'</div>';
+  }
 
   for(let p=0;p<pages;p++){
     html+='<div class="page">';
     for(let r=0;r<perPage;r++){
       const num=p*perPage+r+1;
-      const numStr=num>count?'':String(num).padStart(3,'0');
-      html+='<div class="zone">';
-      if(num<=count){
-        html+='<div class="receipt">'
-          +'<div>'
-          +'<div class="rh"><div class="brand"><div class="badge">CCC</div><div class="bname">best<span>4</span>.golf</div></div><div class="rnum">#'+numStr+'</div></div>'
-          +'<div class="tname">'+c.name+'</div>'
-          +'</div>'
-          +'<div class="fields">'
-          +'<div class="field wide"><label>Player name</label><div class="line"></div></div>'
-          +'<div class="field"><label>Entry #</label><div class="line"></div></div>'
-          +'<div class="field"><label>Date</label><div class="line"></div></div>'
-          +'<div class="field wide"><label>Received by</label><div class="line"></div></div>'
-          +'</div>'
-          +'<div class="rf"><div class="stamp">PAID — Cash at Grill Bar</div><div class="amt"><label>Amount</label><div class="val">$'+c.mainFee+'</div></div></div>'
-          +'</div>';
-      }
-      html+='</div>';
+      if(num>count){html+='<div class="zone"></div>';continue;}
+      const numStr=String(num).padStart(3,'0');
+      html+='<div class="zone"><div class="receipt">'+half(numStr,'PLAYER')+half(numStr,'COMMISSIONER')+'</div></div>';
     }
     html+='</div>';
   }
@@ -1623,7 +1636,6 @@ function printCashReceipts(count){
   w.document.close();
   setTimeout(()=>w.print(),500);
 }
-
 
 function printWinnerSlips(){
   const sc2=scoring();
