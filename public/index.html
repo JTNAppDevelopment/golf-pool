@@ -82,7 +82,7 @@ td.left { text-align: left; }
 <script>
 
 const SKEY="golf-pool-v1";
-const DEF={name:"2025 Masters",course:"Augusta National Golf Club",par:72,numPicks:5,mainFee:100,pickFee:15,splits:[50,30,20],locked:false,deadline:"",winnerGolfer:"",winnerScore:null,publishedRounds:[false,false,false,false],appUrl:"",venmoHandle:"",zelleHandle:"",acceptCash:true,commissionerName:""};
+const DEF={name:"2025 Masters",course:"Augusta National Golf Club",par:72,numPicks:5,mainFee:100,pickFee:15,splits:[50,30,20],locked:false,deadline:"",winnerGolfer:"",winnerScore:null,publishedRounds:[false,false,false,false],appUrl:"",commEmail:"",venmoHandle:"",zelleHandle:"",acceptCash:true,commissionerName:""};
 const MASTERS_2026_FIELD=["Aberg", "Berger", "Bhatia", "Bradley", "Brennan", "Bridgeman", "Burns", "Cabrera", "Campbell", "Cantlay", "Clark", "Conners", "Couples", "Day", "DeChambeau", "Echavarria", "English", "Fang", "Fitzpatrick", "Fleetwood", "Fox", "Garcia", "Gerard", "Gotterup", "Greyserman", "Griffin", "Hall", "Harman", "Hatton", "Henley", "Herrington", "N. Hojgaard", "R. Hojgaard", "Holtz", "Homa", "Hovland", "Howell", "Im", "Jarvis", "D. Johnson", "Z. Johnson", "Kataoka", "Keefer", "M. Kim", "Si Woo Kim", "Kitayama", "Koepka", "Laopakdee", "Lee", "Li", "Lowry", "MacIntyre", "Matsuyama", "McCarty", "McIlroy", "McKibbin", "McNealy", "Mickelson", "Morikawa", "Neergaard-Petersen", "Noren", "Novak", "Olazabal", "Ortiz", "Penge", "Potgieter", "Pulcini", "Rahm", "Rai", "Reed", "Reitan", "Riley", "Rose", "Schauffele", "Scheffler", "Schwartzel", "Scott", "Singh", "Smith", "Spaun", "Spieth", "Stevens", "Straka", "Taylor", "Thomas", "Valimaki", "Watson", "Weir", "Willett", "Woodland", "Young"];
 let S={mode:null,isAdmin:false,view:"leaderboard",config:{...DEF},golfers:[],entries:[],loaded:false,pinChecked:false,pinIsNew:false,pinErr:"",successMsg:"",editIdx:null,playerEmail:null,syncStatus:'',syncError:'',syncData:null,syncMatches:null,syncTournament:''};
 
@@ -235,6 +235,9 @@ function rSetup(){
   const zlInp=$('input',{type:'text',value:c.zelleHandle||'',placeholder:'phone or email'});
   zlInp.addEventListener('change',()=>{S.config.zelleHandle=zlInp.value.trim();save();});
   payG.append($('div',null,$('label',{className:'lbl'},'Zelle handle'),zlInp));
+  const emInp=$('input',{type:'email',value:c.commEmail||'',placeholder:'your@email.com'});
+  emInp.addEventListener('change',()=>{S.config.commEmail=emInp.value.trim();save();});
+  payG.append($('div',null,$('label',{className:'lbl'},'Commissioner email (on Rules page)'),emInp));
   paySec.append(payG);card.append(paySec);
   const st=c.splits.reduce((a,b)=>a+b,0);if(st!==100)card.append($('p',{style:{color:'var(--red)',fontSize:'13px',marginTop:'8px'}},'Splits total '+st+'% (must be 100%)'));
   const post=$('div',{style:{marginTop:'20px',padding:'16px',background:'var(--gray)',borderRadius:'8px'}});
@@ -413,6 +416,7 @@ function rEntryForm(isA){
 
   const isOtherPct=initTipType==='pct'&&!['5','10','15','20','25','30'].includes(String(initTipVal));
   const tipCustom=$('input',{type:'number',style:{width:'80px',display:(initTipType==='flat'||(initTipType==='pct'&&isOtherPct))?'':'none'},id:'tip-custom',value:initTipType==='flat'?initTipVal:(isOtherPct?initTipVal:''),placeholder:initTipType==='flat'?'$ amount':'%'});
+tipCustom.addEventListener('input',()=>{if(+tipCustom.value<0)tipCustom.value=0;});
 
   tipTypeSel.addEventListener('change',()=>{
     const isPct=tipTypeSel.value==='pct';
@@ -441,7 +445,9 @@ function rEntryForm(isA){
     let tipValue=null;
     if(tipType==='pct'){tipValue=tipPctSel.value==='other'?(tipCustom.value===''?null:+tipCustom.value):+tipPctSel.value;}
     else{tipValue=tipCustom.value===''?null:+tipCustom.value;}
-    const entry={id:S.editIdx!==null?S.entries[S.editIdx].id:Date.now().toString(),participant:nm,email:em,picks:pks,tbPrediction:tbi.value===''?null:+tbi.value,pickWinner:pws.value,tipType:tipType,tipValue:tipValue};
+    const sameName=S.entries.filter((e,j)=>e.participant===nm&&j!==(S.editIdx||999999));
+    const entryNum=S.editIdx!==null?(S.entries[S.editIdx].entryNum||1):(sameName.length+1);
+    const entry={id:S.editIdx!==null?S.entries[S.editIdx].id:Date.now().toString(),participant:nm,entryNum:entryNum,email:em,picks:pks,tbPrediction:tbi.value===''?null:+tbi.value,pickWinner:pws.value,tipType:tipType,tipValue:tipValue};
     if(S.editIdx!==null){S.entries[S.editIdx]=entry;S.successMsg='Updated: '+nm;S.editIdx=null;}
     else{S.entries.push(entry);S.successMsg='Entry #'+S.entries.length+' submitted: '+nm;}
     save();R();
@@ -469,9 +475,10 @@ function rEntryList(isA){
   if(isA){
     const rcptRow=$('div',{style:{display:'flex',gap:'8px',alignItems:'center'}});
     const rcptCount=$('input',{type:'number',value:'30',style:{width:'60px',padding:'4px 8px',textAlign:'center'}});
-    const rcptBtn=$('button',{className:'btn btn-o',style:{fontSize:'11px',padding:'4px 10px'},onClick:()=>{printCashReceipts(+rcptCount.value||30);}});
+    const rcptStart=$('input',{type:'number',value:'1',min:'1',style:{width:'55px',padding:'4px 8px',textAlign:'center'},title:'Start from receipt #'});
+    const rcptBtn=$('button',{className:'btn btn-o',style:{fontSize:'11px',padding:'4px 10px'},onClick:()=>{printCashReceipts(+rcptCount.value||30,+rcptStart.value||1);}});
     rcptBtn.textContent='Print cash receipts';
-    rcptRow.append(rcptCount,rcptBtn);
+    rcptRow.append(rcptCount,$('span',{style:{fontSize:'11px',color:'var(--med)'}},'from #'),rcptStart,rcptBtn);
     entHdrRow.append(rcptRow);
   }
   card.append(entHdrRow);
@@ -513,6 +520,14 @@ function rEntryList(isA){
       const actTd=$('td');
       actTd.append($('button',{className:'link-btn',style:{color:'var(--green)'},onClick:()=>{S.editIdx=i;S.successMsg="";R();}},'Edit'),$('button',{className:'link-btn',style:{color:'var(--red)',marginLeft:'8px'},onClick:()=>{if(confirm('Delete '+e.participant+'?')){S.entries.splice(i,1);save();R();}}},'Del'));
       row.append(actTd);
+    } else {
+      const locked=S.config.locked||(S.config.deadline&&new Date()>new Date(S.config.deadline));
+      const myEntry=S.playerEmail&&e.email&&e.email.toLowerCase()===S.playerEmail.toLowerCase();
+      if(myEntry){
+        const vTd=$('td');
+        vTd.append($('button',{className:'link-btn',style:{color:'var(--green)'},onClick:()=>{S.editIdx=i;S.successMsg='';R();}},locked?'View':'Edit'));
+        row.append(vTd);
+      }
     }
     tb.append(row);});tbl.append(tb);w.append(tbl);card.append(w);return card;
 }
@@ -721,7 +736,7 @@ function rScores(){
     sc.scored.filter(e=>e.rank!=null&&e.rank<=10).forEach(e=>{
       const row=$('tr',{style:{background:e.rank<=3?'var(--lt-green)':'transparent'}});
       row.append($('td',{style:{fontWeight:'700'}},String(e.rank)));
-      row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant));
+      row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')));
       row.append($('td',{style:{fontWeight:'700'}},e.best4!=null?String(e.best4):'--'));
       row.append($('td',{style:{color:e.vsPar<0?'var(--green)':'var(--dk)'}},e.vsPar!=null?(e.vsPar>=0?'+':'')+e.vsPar:'--'));
       const ppDiff=e.best4!=null&&pp.score>0?e.best4-pp.score:null;
@@ -755,7 +770,7 @@ function rPayouts(){
       if(e.winnings>0&&e.tipValue!=null){tipAmt=e.tipType==='pct'?Math.round(e.winnings*e.tipValue/100):Math.min(e.tipValue,e.winnings);}
       totalTips+=tipAmt;
       const net=Math.round(e.winnings)-tipAmt;
-      row.append($('td',{className:'left',style:{fontWeight:'700'}},String(e.rank)),$('td',{className:'left',style:{fontWeight:'600'}},e.participant),$('td',{style:{fontWeight:'700'}},String(e.best4)),$('td',null,e.tbPred!=null?String(e.tbPred):'—'),$('td',{style:{fontWeight:'700',color:'var(--green)',fontSize:'15px'}},'$'+Math.round(e.winnings).toLocaleString()));
+      row.append($('td',{className:'left',style:{fontWeight:'700'}},String(e.rank)),$('td',{className:'left',style:{fontWeight:'600'}},e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')),$('td',{style:{fontWeight:'700'}},String(e.best4)),$('td',null,e.tbPred!=null?String(e.tbPred):'—'),$('td',{style:{fontWeight:'700',color:'var(--green)',fontSize:'15px'}},'$'+Math.round(e.winnings).toLocaleString()));
       row.append($('td',{style:{color:'var(--gold)',fontWeight:'600'}},tipAmt>0?'$'+tipAmt.toLocaleString():'—'));
       row.append($('td',{style:{fontWeight:'700'}},'$'+net.toLocaleString()));
       tb.append(row);
@@ -777,7 +792,7 @@ function rPayouts(){
     const t2=$('table');t2.append($('thead',null,$('tr',null,...['Participant','Pick','Correct?','Payout'].map((t,i)=>$('th',{className:i===0?'left':''},t)))));
     const tb2=$('tbody');pwe.forEach(e=>{const ok=e.pickWinner===S.config.winnerGolfer;
       const row=$('tr',{style:{background:ok?'var(--lt-green)':'transparent'}});
-      row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant),$('td',null,e.pickWinner),$('td',null,$('span',{className:'badge '+(ok?'bg-lg':'bg-lr')},ok?'YES':'NO')),$('td',{style:{fontWeight:'700',color:ok?'var(--green)':'inherit'}},ok?'$'+Math.round(pwo).toLocaleString():''));
+      row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')),$('td',null,e.pickWinner),$('td',null,$('span',{className:'badge '+(ok?'bg-lg':'bg-lr')},ok?'YES':'NO')),$('td',{style:{fontWeight:'700',color:ok?'var(--green)':'inherit'}},ok?'$'+Math.round(pwo).toLocaleString():''));
       tb2.append(row);});t2.append(tb2);pw.append(t2);
   }else if(!S.config.winnerGolfer)pw.append($('p',{className:'sub'},'Set winning golfer in Setup to resolve.'));
   frag.append(pw);// Print buttons
@@ -809,7 +824,7 @@ function printQRCard(){
   w.document.write('<div style="margin-bottom:8px;"><svg width="200" height="55" viewBox="0 0 180 50"><text x="78" y="30" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="36" fill="#006747">best<tspan fill="#FFD700">4</tspan></text><line x1="20" y1="36" x2="155" y2="36" stroke="#006747" stroke-width="1.5"/><text x="78" y="47" text-anchor="middle" font-family="Georgia,serif" font-weight="600" font-size="16" fill="#999">.golf</text><line x1="148" y1="10" x2="148" y2="36" stroke="#006747" stroke-width="1.5"/><polygon points="148,10 163,15 148,20" fill="#FFD700"/></svg></div>');w.document.write('<h1>'+S.config.name+'</h1>');
   w.document.write('<div class="course">'+S.config.course+'</div>');
   w.document.write('<div class="qr-wrap" id="qr"></div>');
-  w.document.write('<div class="instructions">Scan to enter the pool<br>$'+S.config.mainFee+' per entry &bull; Pick '+S.config.numPicks+' golfers<br>Top 3 pay out</div>');
+  w.document.write('<div class="instructions">Scan to enter the pool &rarr; tap <strong>Player</strong><br>$'+S.config.mainFee+' per entry &bull; Pick '+S.config.numPicks+' golfers<br>Top 3 pay out</div>');
   w.document.write('<div class="tagline">Good luck!</div>');
   w.document.write('<div class="gold">Pick the Winner side pool: $'+S.config.pickFee+'</div>');
   w.document.write('</div>');
@@ -974,7 +989,8 @@ function getRulesHTML(){
         '2. Your score = best 4 of '+c.numPicks+' (lowest total strokes wins)<br>'+
         '3. If one of your picks misses the cut, he becomes your drop &mdash; you play your other 4 with no safety net<br>'+
         '4. <strong>Two missed cuts = eliminated</strong><br>'+
-        '5. Predict the winner\x27s final score vs. par (tiebreaker: closest without going over)'+
+        '5. Predict the winner\x27s final score vs. par (tiebreaker: closest without going over)<br>'+
+        '6. <strong>Tip the bar staff:</strong> When you enter, pledge a % of your winnings to the Grill Bar staff &mdash; collected at payout'+
       '<br><br><strong>Perfect Pick (+PP):</strong> The theoretical best score &mdash; the 4 lowest-scoring golfers in the field. Your +PP number shows how many strokes you are off that pace.'+
       '</div>'+
     '</div>'+
@@ -990,7 +1006,7 @@ function getRulesHTML(){
       '<div style="font-size:15px;color:#333;">Scan the QR code or visit the link below.<br>Select your '+c.numPicks+' golfers, enter your tiebreaker prediction, and submit.<br>Send payment to confirm your entry.<br><br><strong>During the tournament:</strong> The commissioner will send an email announcement after each round is completed. Click the link in the email to view the updated leaderboard. Sign in with the email you used to enter and your entries will be highlighted.</div>'+
       (c.appUrl?'<div style="margin-top:8px;font-size:14px;color:#006747;font-weight:600;word-break:break-all;">'+c.appUrl+'</div>':'')+
     '</div>'+
-    '<div style="margin-top:16px;font-size:13px;color:#999;">Questions? See the commissioner. Good luck!</div>'+
+    '<div style="margin-top:16px;font-size:13px;color:#999;">Questions? '+(c.commEmail?'Email <a href="mailto:'+c.commEmail+'">'+c.commEmail+'</a>':' See the commissioner')+'</div>'+
   '</div>';
 }
 
@@ -1548,7 +1564,7 @@ function toggleArchiveDetail(a,row){
   scored.slice(0,20).forEach(e=>{
     const row2=$('tr',{style:{background:e.rank&&e.rank<=3?'var(--lt-green)':'transparent'}});
     row2.append($('td',{style:{fontWeight:'700'}},e.rank?String(e.rank):'—'));
-    row2.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant));
+    row2.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')));
     row2.append($('td',{style:{fontWeight:'700'}},e.best4!=null?String(e.best4):'—'));
     row2.append($('td',{className:'left',style:{fontSize:'11px',color:'var(--med)'}},e.picks.join(' \u00b7 ')));
     row2.append($('td',{style:{fontSize:'11px'}},e.droppedPlayer||'—'));
@@ -1561,7 +1577,7 @@ function toggleArchiveDetail(a,row){
 }
 
 
-function printCashReceipts(count){
+function printCashReceipts(count,startAt=1){
   const w=window.open('','_blank','width=850,height=1100');
   const c=S.config;
   const perPage=3;
@@ -1624,7 +1640,7 @@ function printCashReceipts(count){
   for(let p=0;p<pages;p++){
     html+='<div class="page">';
     for(let r=0;r<perPage;r++){
-      const num=p*perPage+r+1;
+      const num=startAt-1+p*perPage+r+1;
       html+='<div class="zone">';
       if(num<=count){
         const numStr=String(num).padStart(3,'0');
