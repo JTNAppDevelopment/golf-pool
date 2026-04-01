@@ -1563,59 +1563,63 @@ function toggleArchiveDetail(a,row){
 
 function printCashReceipts(count){
   const w=window.open('','_blank','width=850,height=1100');
-  w.document.write('<!DOCTYPE html><html><head><title>Cash Receipts</title><style>');
-  w.document.write('body{font-family:Arial,sans-serif;margin:0;padding:0;}');
-  w.document.write('.page{width:8.5in;min-height:11in;padding:0.3in 0.5in;page-break-after:always;}');
-  w.document.write('.receipt{height:3.5in;border:1px dashed #ccc;padding:12px 20px;display:flex;gap:12px;position:relative;}');
-  w.document.write('.half{flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;}');
-  w.document.write('.half h4{margin:0 0 6px;color:#006747;font-size:14px;}');
-  w.document.write('.half .logo-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}');
-  w.document.write('.half .logo-row img{width:28px;height:28px;}');
-  w.document.write('.half .logo-row span{font-family:Georgia,serif;font-weight:700;color:#006747;font-size:14px;}');
-  w.document.write('.half .field{border-bottom:1px solid #999;min-height:20px;margin:4px 0 2px;font-size:13px;}');
-  w.document.write('.half .lbl{font-size:10px;color:#999;}');
-  w.document.write('.half .rcpt-no{font-size:18px;font-weight:700;color:#006747;float:right;}');
-  w.document.write('.cut-line{position:absolute;top:50%;left:0;right:0;border-top:2px dashed #999;}');
-  w.document.write('.cut-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:0 8px;font-size:9px;color:#999;}');
-  w.document.write('.copy-label{font-size:9px;color:#999;text-align:right;margin-bottom:2px;}');
-  w.document.write('@media print{body{margin:0;}.page{padding:0.3in 0.5in;}}');
-  w.document.write('</style></head><body>');
-
+  const c=S.config;
   const perPage=3;
   const pages=Math.ceil(count/perPage);
-  const c=S.config;
+
+  let html='<!DOCTYPE html><html><head><title>Cash Receipts</title><style>';
+  html+='*{margin:0;padding:0;box-sizing:border-box;}';
+  html+='@page{size:letter;margin:0;}';
+  html+='html{height:100%;}';
+  html+='body{height:100%;font-family:Arial,sans-serif;display:flex;flex-direction:column;}';
+  html+='.page{display:flex;flex-direction:column;height:100%;page-break-after:always;}';
+  html+='.zone{flex:1;display:flex;align-items:center;justify-content:center;}';
+  html+='.receipt{width:7.8in;height:3.2in;border:1px solid #ccc;border-radius:6px;padding:14px 22px;display:flex;flex-direction:column;justify-content:space-between;}';
+  html+='.rh{display:flex;justify-content:space-between;align-items:flex-start;}';
+  html+='.brand{display:flex;align-items:center;gap:8px;}';
+  html+='.badge{width:32px;height:32px;background:#1B2A6B;border-radius:4px;display:flex;align-items:center;justify-content:center;color:white;font-size:9px;font-weight:700;letter-spacing:0.5px;}';
+  html+='.bname{font-family:Georgia,serif;font-size:16px;font-weight:700;color:#006747;}';
+  html+='.bname span{color:#D4A017;}';
+  html+='.rnum{font-size:26px;font-weight:700;color:#006747;}';
+  html+='.tname{font-size:13px;font-weight:600;color:#222;margin-top:6px;}';
+  html+='.fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 16px;margin-top:4px;}';
+  html+='.field label{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:0.5px;display:block;margin-bottom:2px;}';
+  html+='.field .line{border-bottom:1px solid #ccc;height:20px;width:100%;}';
+  html+='.wide{grid-column:span 2;}';
+  html+='.rf{display:flex;justify-content:space-between;align-items:center;}';
+  html+='.stamp{font-size:13px;font-weight:700;color:#006747;border:2px solid #006747;padding:3px 10px;border-radius:4px;letter-spacing:0.5px;}';
+  html+='.amt{text-align:right;}';
+  html+='.amt label{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:0.5px;display:block;}';
+  html+='.amt .val{font-size:18px;font-weight:700;color:#222;}';
+  html+='</style></head><body>';
+
   for(let p=0;p<pages;p++){
-    w.document.write('<div class="page">');
+    html+='<div class="page">';
     for(let r=0;r<perPage;r++){
       const num=p*perPage+r+1;
-      if(num>count)break;
-      const numStr=String(num).padStart(3,'0');
-      const halfHTML=function(copy){
-        return '<div class="half">'
-          +'<div class="copy-label">'+copy+'</div>'
-          +'<div class="logo-row"><img src="'+CCC_LOGO+'" /><span>best4.golf</span></div>'
-          +'<div style="font-weight:700;font-size:13px;color:#333;">'+c.name+'</div>'
-          +'<div class="rcpt-no">#'+numStr+'</div>'
-          +'<div class="lbl">Player name</div><div class="field"></div>'
-          +'<div style="display:flex;gap:16px;">'
-          +'<div style="flex:1;"><div class="lbl">Entry #</div><div class="field"></div></div>'
-          +'<div style="flex:1;"><div class="lbl">Amount</div><div class="field">$'+c.mainFee+'</div></div>'
+      const numStr=num>count?'':String(num).padStart(3,'0');
+      html+='<div class="zone">';
+      if(num<=count){
+        html+='<div class="receipt">'
+          +'<div>'
+          +'<div class="rh"><div class="brand"><div class="badge">CCC</div><div class="bname">best<span>4</span>.golf</div></div><div class="rnum">#'+numStr+'</div></div>'
+          +'<div class="tname">'+c.name+'</div>'
           +'</div>'
-          +'<div style="display:flex;gap:16px;">'
-          +'<div style="flex:1;"><div class="lbl">Date</div><div class="field"></div></div>'
-          +'<div style="flex:1;"><div class="lbl">Received by</div><div class="field"></div></div>'
+          +'<div class="fields">'
+          +'<div class="field wide"><label>Player name</label><div class="line"></div></div>'
+          +'<div class="field"><label>Entry #</label><div class="line"></div></div>'
+          +'<div class="field"><label>Date</label><div class="line"></div></div>'
+          +'<div class="field wide"><label>Received by</label><div class="line"></div></div>'
           +'</div>'
-          +'<div style="margin-top:4px;font-size:11px;font-weight:600;color:#006747;">PAID — Cash at Grill Bar</div>'
+          +'<div class="rf"><div class="stamp">PAID — Cash at Grill Bar</div><div class="amt"><label>Amount</label><div class="val">$'+c.mainFee+'</div></div></div>'
           +'</div>';
-      };
-      w.document.write('<div class="receipt">'
-        +halfHTML('PLAYER COPY')
-        +halfHTML('COMMISSIONER COPY')
-        +'</div>');
+      }
+      html+='</div>';
     }
-    w.document.write('</div>');
+    html+='</div>';
   }
-  w.document.write('</body></html>');
+  html+='</body></html>';
+  w.document.write(html);
   w.document.close();
   setTimeout(()=>w.print(),500);
 }
