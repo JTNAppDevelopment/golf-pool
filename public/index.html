@@ -341,6 +341,28 @@ function rEntryForm(isA){
     frag.append(smDiv);
   }
   const card=$('div',{className:'card'});card.append($('h2',{className:'hd'},S.editIdx!==null?'Edit entry':'Submit new entry'));
+  // Payment method gate — must select before submitting
+  const hasPayInfo=S.config.venmoHandle||S.config.zelleHandle||S.config.acceptCash;
+  let selPayMethod='';
+  if(hasPayInfo&&!isA){
+    const payGate=$('div',{style:{marginBottom:'16px',padding:'14px 16px',background:'#FFF8E1',borderRadius:'8px',border:'2px solid var(--gold)'}});
+    payGate.append($('p',{style:{fontWeight:'700',fontSize:'13px',color:'var(--dk)',marginBottom:'10px'}},'How will you pay? (required)'));
+    const payOpts=$('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap'}});
+    const makePayBtn=(label,val,bg)=>{
+      const btn=$('button',{className:'btn',style:{background:bg,color:'white',border:'none',fontSize:'12px',padding:'6px 14px'},
+        onClick:()=>{
+          selPayMethod=val;
+          payOpts.querySelectorAll('button').forEach(b=>b.style.opacity='0.4');
+          btn.style.opacity='1';btn.style.outline='3px solid #333';
+        }});
+      btn.textContent=label;return btn;
+    };
+    if(S.config.venmoHandle)payOpts.append(makePayBtn('Venmo','venmo','#008CFF'));
+    if(S.config.zelleHandle)payOpts.append(makePayBtn('Zelle','zelle','#6D1ED4'));
+    if(S.config.acceptCash)payOpts.append(makePayBtn('Cash at Grill Bar','cash','#006747'));
+    payGate.append(payOpts);
+    card.append(payGate);
+  };
   if(S.golfers.length===0){card.append($('p',{style:{color:'var(--red)',fontSize:'13px',marginTop:'8px'}},'No golfers loaded yet — commissioner must add the field first.'));frag.append(card);return frag;}
   const gN=S.golfers.map(g=>g.name).sort(),np=S.config.numPicks;
   let ip=Array(np).fill(''),iPart='',iTb='',iPw='';
@@ -439,6 +461,7 @@ tipCustom.addEventListener('input',()=>{if(+tipCustom.value<0)tipCustom.value=0;
   const btns=$('div',{style:{marginTop:'16px',display:'flex',gap:'8px'}});
   btns.append($('button',{className:'btn btn-p',onClick:()=>{
     const nm=pi.value.trim(),pks=sels.map(s=>s.value).filter(Boolean);
+    if(hasPayInfo&&!isA&&!selPayMethod){alert('Please select a payment method');return;}
     if(!nm){alert('Enter participant name');return;}
     const em=emailInp.value.trim();if(!em||!em.includes('@')){alert('Enter a valid email address');return;}if(pks.length<np){alert('Select all '+np+' golfers');return;}if(new Set(pks).size<np){alert('Each pick must be a different golfer');return;}if(tbi.value===''){alert('Tiebreaker prediction is required');return;}
     const tipType=tipTypeSel.value;
@@ -447,7 +470,7 @@ tipCustom.addEventListener('input',()=>{if(+tipCustom.value<0)tipCustom.value=0;
     else{tipValue=tipCustom.value===''?null:+tipCustom.value;}
     const sameName=S.entries.filter((e,j)=>e.participant===nm&&j!==(S.editIdx||999999));
     const entryNum=S.editIdx!==null?(S.entries[S.editIdx].entryNum||1):(sameName.length+1);
-    const entry={id:S.editIdx!==null?S.entries[S.editIdx].id:Date.now().toString(),participant:nm,entryNum:entryNum,email:em,picks:pks,tbPrediction:tbi.value===''?null:+tbi.value,pickWinner:pws.value,tipType:tipType,tipValue:tipValue};
+    const entry={id:S.editIdx!==null?S.entries[S.editIdx].id:Date.now().toString(),participant:nm,entryNum:entryNum,payMethod:selPayMethod||'',email:em,picks:pks,tbPrediction:tbi.value===''?null:+tbi.value,pickWinner:pws.value,tipType:tipType,tipValue:tipValue};
     if(S.editIdx!==null){S.entries[S.editIdx]=entry;S.successMsg='Updated: '+nm;S.editIdx=null;}
     else{S.entries.push(entry);S.successMsg='Entry #'+S.entries.length+' submitted: '+nm;}
     save();R();
