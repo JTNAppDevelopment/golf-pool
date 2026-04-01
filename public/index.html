@@ -994,6 +994,8 @@ function getRulesHTML(){
       '<br><br><strong>Perfect Pick (+PP):</strong> The theoretical best score &mdash; the 4 lowest-scoring golfers in the field. Your +PP number shows how many strokes you are off that pace.'+
       '</div>'+
     '</div>'+
+    '<div style="margin:10px 0;padding:10px 16px;background:#FFF8E1;border-radius:8px;border-left:4px solid #D4A017;font-size:14px;color:#333;text-align:left;">'+
+    '<strong>Bar staff:</strong> 5% of the pool is set aside for Grill Bar staff. Individual tip pledges from your winnings are voluntary and on top of that.</div>'+
     '<div style="margin:16px 0;padding:16px 20px;background:'+(THEMES[S.config.theme]||THEMES.default).ltAccent+';border-radius:8px;text-align:left;">'+
       '<div style="font-size:17px;font-weight:700;color:#006747;margin-bottom:8px;">Payouts</div>'+
       '<div style="font-size:15px;color:#333;">'+
@@ -1053,8 +1055,10 @@ function rPlayerSignin(){
     if(match)card.append($('p',{style:{fontSize:'15px',marginTop:'8px',color:'var(--dk)'}},match.participant));
     card.append($('p',{className:'sub',style:{marginBottom:'20px'}},saved));
     card.append($('button',{className:'btn btn-p',style:{width:'100%',marginTop:'8px'},onClick:()=>{
-      S.playerEmail=saved;S.view='leaderboard';R();
-    }},'View leaderboard'));
+      S.playerEmail=saved;
+      const _hasEnt2=S.entries.some(function(e){return e.email&&e.email.toLowerCase()===saved.toLowerCase();});
+      S.view=_hasEnt2?'leaderboard':'enter';R();
+    }},match?'View leaderboard':'Enter picks'));
     card.append($('button',{className:'btn btn-o',style:{width:'100%',marginTop:'8px'},onClick:()=>{
       try{localStorage.removeItem('best4-player-email');}catch(e){}S.playerEmail=null;R();
     }},'Sign in as someone else'));
@@ -1070,7 +1074,8 @@ function rPlayerSignin(){
       if(!em||!em.includes('@')){err.textContent='Enter a valid email';err.style.display='block';return;}
       S.playerEmail=em;
       try{localStorage.setItem('best4-player-email',em);}catch(e){}
-      S.view='leaderboard';R();
+      const _hasEntry=S.entries.some(function(e){return e.email&&e.email.toLowerCase()===em.toLowerCase();});
+      S.view=_hasEntry?'leaderboard':'enter';R();
     };
     inp.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
     card.append($('button',{className:'btn btn-p',style:{width:'100%',marginTop:'16px'},onClick:go},'View leaderboard'));
