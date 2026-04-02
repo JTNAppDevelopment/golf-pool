@@ -1,9 +1,10 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/api/espn", "dest": "/api/espn.js" },
-    { "src": "/api/data",  "dest": "/api/data.js"  },
-    { "src": "/api/pin",   "dest": "/api/pin.js"   },
+    { "src": "/api/espn",   "dest": "/api/espn.js"   },
+    { "src": "/api/data",   "dest": "/api/data.js"   },
+    { "src": "/api/pin",    "dest": "/api/pin.js"    },
+    { "src": "/api/notify", "dest": "/api/notify.js" },
     { "src": "/(.*)",      "dest": "/public/index.html" }
   ]
 }

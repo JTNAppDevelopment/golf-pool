@@ -481,7 +481,11 @@ tipCustom.addEventListener('input',()=>{if(+tipCustom.value<0)tipCustom.value=0;
     const entryNum=S.editIdx!==null?(S.entries[S.editIdx].entryNum||1):(sameName.length+1);
     const entry={id:S.editIdx!==null?S.entries[S.editIdx].id:Date.now().toString(),participant:nm,entryNum:entryNum,payMethod:selPayMethod||'',email:em,picks:pks,tbPrediction:tbi.value===''?null:+tbi.value,pickWinner:pws.value,tipType:tipType,tipValue:tipValue};
     if(S.editIdx!==null){S.entries[S.editIdx]=entry;S.successMsg='Updated: '+nm;S.editIdx=null;}
-    else{S.entries.push(entry);S.successMsg='Entry #'+S.entries.length+' submitted: '+nm;}
+    else{S.entries.push(entry);S.successMsg='Entry #'+S.entries.length+' submitted: '+nm;
+      // Notify commissioner every 5 entries
+      const ec=S.entries.length;
+      if(ec>0&&ec%5===0){notifyCommissioner(ec);}
+    }
     save();R();
   }},S.editIdx!==null?'Update':'Submit entry'));
   if(S.editIdx!==null)btns.append($('button',{className:'btn btn-o',onClick:()=>{S.editIdx=null;S.successMsg="";R();}},'Cancel'));
@@ -1616,6 +1620,23 @@ function toggleArchiveDetail(a,row){
   row.append(detail);
 }
 
+
+function notifyCommissioner(count){
+  const batch=Math.ceil(count/5);
+  const from=((batch-1)*5)+1;
+  const to=batch*5;
+  fetch('/api/notify',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      to:'jtnindc@gmail.com',
+      subject:'best4.golf — '+S.config.name+': entries '+from+'–'+to+' received',
+      html:'<p>Entries <strong>'+from+'–'+to+'</strong> have been submitted for <strong>'+S.config.name+'</strong>.</p>'
+        +'<p>Total entries so far: <strong>'+count+'</strong></p>'
+        +'<p><a href="'+S.config.appUrl+'">Open pool</a></p>'
+    })
+  }).catch(()=>{}); // silent fail — never interrupt player flow
+}
 
 function printCashReceipts(count,startAt=1){
   const w=window.open('','_blank','width=850,height=1100');
