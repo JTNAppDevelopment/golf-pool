@@ -404,7 +404,7 @@ function rEntryForm(isA){
   const tbGrid=$('div',{style:{display:'flex',gap:'8px',marginTop:'4px'}});
   const tbColL=$('div',{style:{flex:'1'}});
   tbColL.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'Over / Even'));
-  for(let v=10;v>=0;v--){
+  for(let v=12;v>=0;v--){
     const label=v>0?'+'+v:'E';
     const val=v>0?String(v):'0';
     const btn=$('button',{style:{display:'block',width:'100%',padding:'6px 4px',marginBottom:'2px',fontSize:'13px',fontWeight:'600',border:'2px solid '+(tbVal===val?'var(--gold)':'var(--border)'),borderRadius:'4px',background:tbVal===val?'var(--gold)':'white',color:tbVal===val?'#333':'var(--dk)',cursor:'pointer'}});
@@ -412,17 +412,19 @@ function rEntryForm(isA){
     btn.addEventListener('click',(ev)=>{ev.preventDefault();tbVal=val;tbGrid.querySelectorAll('button').forEach(b=>{b.style.border='2px solid var(--border)';b.style.background='white';b.style.color='var(--dk)';});btn.style.border='2px solid var(--gold)';btn.style.background='var(--gold)';btn.style.color='#333';});
     tbColL.append(btn);
   }
-  const tbColR=$('div',{style:{flex:'1'}});
-  tbColR.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'Under Par'));
-  for(let v=-1;v>=-25;v--){
+  const tbColR1=$('div',{style:{flex:'1'}});
+  const tbColR2=$('div',{style:{flex:'1'}});
+  tbColR1.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'Under Par'));
+  tbColR2.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'\u00A0'));
+  for(let v=-1;v>=-26;v--){
     const label=String(v);
     const val=String(v);
     const btn=$('button',{style:{display:'block',width:'100%',padding:'6px 4px',marginBottom:'2px',fontSize:'13px',fontWeight:'600',border:'2px solid '+(tbVal===val?'var(--gold)':'var(--border)'),borderRadius:'4px',background:tbVal===val?'var(--gold)':'white',color:tbVal===val?'#333':'var(--dk)',cursor:'pointer'}});
     btn.textContent=label;
     btn.addEventListener('click',(ev)=>{ev.preventDefault();tbVal=val;tbGrid.querySelectorAll('button').forEach(b=>{b.style.border='2px solid var(--border)';b.style.background='white';b.style.color='var(--dk)';});btn.style.border='2px solid var(--gold)';btn.style.background='var(--gold)';btn.style.color='#333';});
-    tbColR.append(btn);
+    (v>=-13?tbColR1:tbColR2).append(btn);
   }
-  tbGrid.append(tbColL,tbColR);tbDiv.append(tbGrid);
+  tbGrid.append(tbColL,tbColR1,tbColR2);tbDiv.append(tbGrid);
   const tbi={get value(){return tbVal||'';}};
   g.append(tbDiv);
   const pws=$('select');pws.append($('option',{value:''},'Select golfer (optional)...'));gN.forEach(n=>{const o=$('option',{value:n},n);if(iPw===n)o.selected=true;pws.append(o);});
