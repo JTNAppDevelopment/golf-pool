@@ -434,7 +434,7 @@ function rEntryForm(isA){
   const tbi={get value(){return tbVal||'';}};
   g.append(tbDiv);
   const pws=$('select');pws.append($('option',{value:''},'Select golfer (optional)...'));gN.forEach(n=>{const o=$('option',{value:n},n);if(iPw===n)o.selected=true;pws.append(o);});
-  g.append($('div',null,$('label',{className:'lbl'},'Pick the winner ($'+S.config.pickFee+')'),pws));
+  g.append($('div',{style:{gridColumn:'1 / -1'}},$('h3',{className:'hd',style:{marginBottom:'6px'}},'Pick the winner ($'+S.config.pickFee+')'),pws));
 
   // Tip pledge
   const tipDiv=$('div',{style:{gridColumn:'1 / -1',marginTop:'4px',padding:'12px 16px',background:'#FFF8E1',borderRadius:'8px',border:'1px solid var(--gold)'}});
