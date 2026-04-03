@@ -188,7 +188,7 @@ function rPin(){
 function rTopbar(){
   const tabs=S.isAdmin?['setup','golfers','entries','scores','leaderboard','payouts','announce','archive']:['leaderboard','enter','whatif','rules'];
   const bar=$('div',{className:'topbar',style:{position:'relative'}});
-  bar.append($('img',{src:CCC_LOGO,style:{position:'absolute',bottom:'6px',right:'16px',width:'28px',height:'28px',objectFit:'contain',opacity:'0.85'}}));
+  bar.append($('img',{src:CCC_LOGO,style:{position:'absolute',top:'50%',right:'16px',transform:'translateY(-50%)',width:'52px',height:'52px',objectFit:'contain',opacity:'0.85'}}));
   const inner=$('div',{className:'topbar-inner'},
     $('div',{style:{display:'flex',alignItems:'center',gap:'10px'}},logoSVG(0.7,true),$('p',{className:'st'},S.config.name||'')),
     $('div',{className:'nav'},
