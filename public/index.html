@@ -174,7 +174,7 @@ function rPin(){
   const card=$('div',{className:'card'});
   const pinLogo=$('div',{style:{marginBottom:'12px',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}});pinLogo.append($('img',{src:CCC_LOGO,style:{width:'60px',height:'60px',objectFit:'contain'}}));pinLogo.append(logoSVG(0.9));card.append(pinLogo);card.append($('h2',{className:'hd'},'Commissioner access'));
   card.append($('p',{className:'sub',style:{marginBottom:'20px'}},S.pinIsNew?'Create your admin PIN':'Enter your PIN'));
-  const pi=$('input',{type:'password',className:'pin-input',maxLength:'8',placeholder:'• • • •'});card.append(pi);
+  const pi=$('input',{type:'password',className:'pin-input',maxLength:'8',placeholder:'• • • •'});card.append(pi);setTimeout(()=>pi.focus(),50);
   let ci;if(S.pinIsNew){ci=$('input',{type:'password',className:'pin-input',maxLength:'8',placeholder:'Confirm',style:{marginTop:'12px'}});card.append(ci);}
   if(S.pinErr)card.append($('p',{className:'err'},S.pinErr));
   const go=()=>submitPin(pi.value,ci?ci.value:'');
