@@ -412,19 +412,25 @@ function rEntryForm(isA){
     btn.addEventListener('click',(ev)=>{ev.preventDefault();tbVal=val;tbGrid.querySelectorAll('button').forEach(b=>{b.style.border='2px solid var(--border)';b.style.background='white';b.style.color='var(--dk)';});btn.style.border='2px solid var(--gold)';btn.style.background='var(--gold)';btn.style.color='#333';});
     tbColL.append(btn);
   }
+  const tbColRWrap=$('div',{style:{flex:'2',display:'flex',flexDirection:'column'}});
+  const tbColRLabel=$('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}});
+  tbColRLabel.append($('div',{style:{flex:'1',height:'1px',background:'var(--border)'}}));
+  tbColRLabel.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',textAlign:'center',whiteSpace:'nowrap'}},'Under Par'));
+  tbColRLabel.append($('div',{style:{flex:'1',height:'1px',background:'var(--border)'}}));
+  tbColRWrap.append(tbColRLabel);
+  const tbColRInner=$('div',{style:{display:'flex',gap:'8px'}});
   const tbColR1=$('div',{style:{flex:'1'}});
   const tbColR2=$('div',{style:{flex:'1'}});
-  tbColR1.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'Under Par'));
-  tbColR2.append($('div',{style:{fontSize:'11px',fontWeight:'600',color:'var(--med)',marginBottom:'4px',textAlign:'center'}},'\u00A0'));
   for(let v=-1;v>=-26;v--){
     const label=String(v);
     const val=String(v);
-    const btn=$('button',{style:{display:'block',width:'100%',padding:'6px 4px',marginBottom:'2px',fontSize:'13px',fontWeight:'600',border:'2px solid '+(tbVal===val?'var(--gold)':'var(--border)'),borderRadius:'4px',background:tbVal===val?'var(--gold)':'white',color:tbVal===val?'#333':'var(--dk)',cursor:'pointer'}});
+    const btn=$('button',{style:{display:'block',width:'100%',padding:'6px 4px',marginBottom:'2px',fontSize:'13px',fontWeight:'600',border:'2px solid '+(tbVal===val?'var(--gold)':'var(--border)'),borderRadius:'4px',background:tbVal===val?'var(--gold)':'white',color:tbVal===val?'#333':'var(--red)',cursor:'pointer'}});
     btn.textContent=label;
-    btn.addEventListener('click',(ev)=>{ev.preventDefault();tbVal=val;tbGrid.querySelectorAll('button').forEach(b=>{b.style.border='2px solid var(--border)';b.style.background='white';b.style.color='var(--dk)';});btn.style.border='2px solid var(--gold)';btn.style.background='var(--gold)';btn.style.color='#333';});
+    btn.addEventListener('click',(ev)=>{ev.preventDefault();tbVal=val;tbGrid.querySelectorAll('button').forEach(b=>{b.style.border='2px solid var(--border)';b.style.background='white';b.style.color=b.parentNode===tbColL?'var(--dk)':'var(--red)';});btn.style.border='2px solid var(--gold)';btn.style.background='var(--gold)';btn.style.color='#333';});
     (v>=-13?tbColR1:tbColR2).append(btn);
   }
-  tbGrid.append(tbColL,tbColR1,tbColR2);tbDiv.append(tbGrid);
+  tbColRInner.append(tbColR1,tbColR2);tbColRWrap.append(tbColRInner);
+  tbGrid.append(tbColL,tbColRWrap);tbDiv.append(tbGrid);
   const tbi={get value(){return tbVal||'';}};
   g.append(tbDiv);
   const pws=$('select');pws.append($('option',{value:''},'Select golfer (optional)...'));gN.forEach(n=>{const o=$('option',{value:n},n);if(iPw===n)o.selected=true;pws.append(o);});
