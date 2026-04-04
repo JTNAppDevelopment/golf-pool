@@ -1070,10 +1070,10 @@ function getRulesHTML(){
 function printRules(){
   const w=window.open('','_blank','width=700,height=900');
   w.document.write('<!DOCTYPE html><html><head><title>Pool Rules</title><style>');
-  w.document.write('body{margin:0;padding:24px;font-family:Georgia,serif;}');
-  w.document.write('@media print{body{padding:16px;}}');
+  w.document.write('body{margin:0;padding:12px 16px;font-family:Georgia,serif;}');
+  w.document.write('@media print{body{padding:8px 12px;}@page{margin:0.4in;}}');
   w.document.write('</style></head><body>');
-  w.document.write(getRulesHTML());
+  w.document.write(getRulesHTML().replace(/margin:20px 0/g,'margin:10px 0').replace(/margin:16px 0/g,'margin:8px 0').replace(/margin:10px 0;padding:10px 16px/g,'margin:6px 0;padding:6px 12px').replace(/padding:16px 20px/g,'padding:10px 14px').replace(/margin-bottom:20px/g,'margin-bottom:10px').replace(/line-height:1\.8/g,'line-height:1.5').replace(/line-height:1\.7/g,'line-height:1.5').replace(/font-size:28px/g,'font-size:22px').replace(/font-size:17px/g,'font-size:15px').replace(/font-size:16px/g,'font-size:14px').replace(/font-size:15px/g,'font-size:13px').replace(/margin-bottom:8px/g,'margin-bottom:4px'));
   w.document.write('</body></html>');
   w.document.close();
   setTimeout(()=>w.print(),300);
