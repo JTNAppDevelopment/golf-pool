@@ -527,6 +527,16 @@ function rEntryList(isA){
   }
   card.append(entHdrRow);
   if(!S.entries.length){card.append($('p',{className:'sub'},'No entries yet'));return card;}
+  const entriesLocked=S.config.locked||(S.config.deadline&&new Date()>new Date(S.config.deadline));
+  if(!isA&&!entriesLocked){
+    const list=$('div',{style:{marginTop:'12px'}});
+    const names=[];S.entries.forEach((e,i)=>{const pCount=S.entries.filter(x=>x.participant===e.participant).length;const pIdx=pCount>1?S.entries.filter((x,j)=>x.participant===e.participant&&j<=i).length:0;names.push(pCount>1?e.participant+' (Entry '+pIdx+')':e.participant);});
+    names.forEach((n,i)=>list.append($('div',{style:{padding:'6px 12px',borderBottom:'1px solid var(--border)',fontSize:'14px',display:'flex',justifyContent:'space-between'}},
+      $('span',null,(i+1)+'. '+n),$('span',{style:{color:'var(--med)',fontSize:'12px'}},'✓ Entered'))));
+    card.append(list);
+    card.append($('p',{style:{marginTop:'12px',fontSize:'12px',color:'var(--med)',fontStyle:'italic'}},'Picks will be revealed when entries close.'));
+    return card;
+  }
   const w=$('div',{className:'overflow-x',style:{marginTop:'12px'}}),tbl=$('table');
   const hds=['#','Participant'];
   if(isA)hds.push('Email');
