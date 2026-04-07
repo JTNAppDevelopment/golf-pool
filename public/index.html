@@ -752,7 +752,7 @@ function rScores(){
   const fiData=S.golfers.map(g=>{
     const gp=gPosMap[g.name];
     return{name:g.name,pos:gp?gp.pos:g.cutStatus==='MC'?'MC':'--',vsPar:gp?(gp.vsPar>=0?'+':'')+gp.vsPar:'--',picked:pickCounts[g.name]||0,ptw:ptwCounts[g.name]||0,inTop10:top10Golfers[g.name]||0};
-  }).filter(g=>g.picked>0).sort((a,b)=>b.picked-a.picked);
+  }).filter(g=>g.picked>0||g.ptw>0).sort((a,b)=>b.picked-a.picked||b.ptw-a.ptw);
 
   if(fiData.length){
     const ftbl=$('table');
