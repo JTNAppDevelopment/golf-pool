@@ -111,20 +111,16 @@ async function _set(k,v){
 async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}if(S.golfers.length===0){S.golfers=MASTERS_2026_FIELD.map(n=>({name:n,scores:[null,null,null,null],cutStatus:''}));save();}S.loaded=true;R();}
 async function save(){await _set(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));}
 async function checkPin(){
-  if(!_PIN){try{const p=localStorage.getItem(SKEY+"-pin");if(p)_PIN=p;}catch(e){}}
-  S.pinIsNew=!_PIN;S.pinChecked=true;R();
+  S.pinIsNew=false;S.pinChecked=true;R();
 }
 async function submitPin(pin,conf){
-  if(S.pinIsNew){
-    if(pin.length<4){S.pinErr="PIN must be at least 4 characters";R();return;}
-    if(pin!==conf){S.pinErr="PINs don't match";R();return;}
-    _PIN=pin;
-    try{localStorage.setItem(SKEY+"-pin",pin);}catch(e){}
-    S.isAdmin=true;S.view='setup';S.pinErr="";R();
-  } else {
-    if(pin===_PIN){S.isAdmin=true;S.view='setup';S.pinErr="";R();}
+  if(pin.length<4){S.pinErr="PIN must be at least 4 characters";R();return;}
+  try{
+    const r=await fetch('/api/pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
+    const d=await r.json();
+    if(d.ok){_PIN=pin;try{localStorage.setItem(SKEY+"-pin",pin);}catch(e){}S.isAdmin=true;S.view='setup';S.pinErr="";R();}
     else{S.pinErr="Wrong PIN";R();}
-  }
+  }catch(e){S.pinErr="Could not verify PIN";R();}
 }
 
 function scoring(){
@@ -173,14 +169,14 @@ function rPin(){
   if(!S.pinChecked)return $('div',{className:'pin-box'},$('div',{className:'card'},$('p',{className:'sub'},'Checking...')));
   const card=$('div',{className:'card'});
   const pinLogo=$('div',{style:{marginBottom:'12px',display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}});pinLogo.append($('img',{src:CCC_LOGO,style:{width:'60px',height:'60px',objectFit:'contain'}}));pinLogo.append(logoSVG(0.9));card.append(pinLogo);card.append($('h2',{className:'hd'},'Commissioner access'));
-  card.append($('p',{className:'sub',style:{marginBottom:'20px'}},S.pinIsNew?'Create your admin PIN':'Enter your PIN'));
+  card.append($('p',{className:'sub',style:{marginBottom:'20px'}},'Enter your PIN'));
   const pi=$('input',{type:'password',className:'pin-input',maxLength:'8',placeholder:'• • • •'});card.append(pi);setTimeout(()=>pi.focus(),50);
-  let ci;if(S.pinIsNew){ci=$('input',{type:'password',className:'pin-input',maxLength:'8',placeholder:'Confirm',style:{marginTop:'12px'}});card.append(ci);}
+  const ci=null;
   if(S.pinErr)card.append($('p',{className:'err'},S.pinErr));
   const go=()=>submitPin(pi.value,ci?ci.value:'');
   pi.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
   if(ci)ci.addEventListener('keydown',e=>{if(e.key==='Enter')go();});
-  card.append($('button',{className:'btn btn-p',style:{width:'100%',marginTop:'16px'},onClick:go},S.pinIsNew?'Set PIN & enter':'Enter'));
+  card.append($('button',{className:'btn btn-p',style:{width:'100%',marginTop:'16px'},onClick:go},'Enter'));
   card.append($('button',{className:'btn btn-o',style:{width:'100%',marginTop:'8px'},onClick:()=>{S.mode=null;S.pinChecked=false;S.pinErr="";R();}},'← Back'));
   return $('div',{className:'pin-box'},card);
 }
