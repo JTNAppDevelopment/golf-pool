@@ -650,10 +650,13 @@ function rMastersBoard(){
       row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontWeight:'600',color:'#006747',fontSize:'12px'}},g.pos||''));
       row.append($('td',{style:{padding:'5px 8px',fontWeight:'600',fontSize:'13px'}},g.fullName||g.name));
       const parVal=g.scoreToPar||'';
-      const parColor=parVal.startsWith('-')?'#CC0000':parVal==='E'?'#333':'#006747';
+      const parColor=parVal.startsWith('-')?'#CC0000':parVal==='E'?'#006747':'#333';
       row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontWeight:'700',color:parColor,fontSize:'14px'}},parVal));
       row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontSize:'12px',color:'#666'}},g.completed?'F':(g.thru||'')));
-      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontSize:'12px',color:'#666'}},g.today||''));
+      const todayRaw=g.today||'';
+      const todayPar=todayRaw.replace(/\(.*\)/,'').trim();
+      const todayColor=todayPar.startsWith('-')?'#CC0000':todayPar==='E'?'#006747':'#333';
+      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontSize:'12px',fontWeight:'600',color:todayColor}},todayPar));
       tb.append(row);
     });
   } else {

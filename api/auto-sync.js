@@ -78,7 +78,9 @@ export default async function handler(req, res) {
       const lastName = a.lastName || (a.displayName || '').split(' ').pop() || '';
       const st = c.status || {};
       const pos = st.position ? st.position.displayName : '';
-      const scoreToPar = c.score ? c.score.displayValue : '';
+      const stats = c.statistics || [];
+      const stpStat = stats.find(s => s.name === 'scoreToPar');
+      const scoreToPar = stpStat ? stpStat.displayValue : (c.score ? c.score.displayValue : '');
       const thru = st.thru != null ? st.displayThru || String(st.thru) : '';
       const completed = st.type ? st.type.completed : false;
       const movement = c.movement || 0;
