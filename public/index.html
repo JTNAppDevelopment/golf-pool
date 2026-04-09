@@ -530,7 +530,7 @@ tipCustom.addEventListener('input',()=>{if(+tipCustom.value<0)tipCustom.value=0;
     else{S.entries.push(entry);S.successMsg='Entry #'+S.entries.length+' submitted: '+nm;
       // Notify commissioner every 5 entries
       const ec=S.entries.length;
-      if(ec>0&&ec%5===0){notifyCommissioner(ec);}
+      // Notifications now handled server-side in api/data.js
     }
     save();R();
   }},S.editIdx!==null?'Update':'Submit entry'));

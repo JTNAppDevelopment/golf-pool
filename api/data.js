@@ -2,6 +2,33 @@
 import { kv } from '@vercel/kv';
 
 const KEY = 'pool:state';
+const NOTIFY_KEY = 'pool:last-notified-count';
+
+async function sendNotification(entryCount, config) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+  const commEmail = (config && config.commEmail) || 'jtnindc@gmail.com';
+  const poolName = (config && config.name) || 'Golf Pool';
+  const appUrl = (config && config.appUrl) || 'https://best4.golf';
+  const batch = Math.ceil(entryCount / 5);
+  const from = ((batch - 1) * 5) + 1;
+  const to = batch * 5;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'best4.golf <onboarding@resend.dev>',
+        to: [commEmail],
+        subject: `best4.golf — ${poolName}: entries ${from}–${to} received`,
+        html: `<p>Entries <strong>${from}–${to}</strong> have been submitted for <strong>${poolName}</strong>.</p><p>Total entries so far: <strong>${entryCount}</strong></p><p><a href="${appUrl}">Open pool</a></p>`
+      })
+    });
+  } catch (e) { /* silent fail */ }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,6 +48,7 @@ export default async function handler(req, res) {
       let existing = null;
       try { existing = await kv.get(KEY); } catch (e) {}
 
+      const prevEntryCount = (existing && existing.entries) ? existing.entries.length : 0;
       let merged = incoming;
 
       if (existing && existing.entries && incoming.entries) {
@@ -51,7 +79,18 @@ export default async function handler(req, res) {
       }
 
       await kv.set(KEY, merged);
-      return res.status(200).json({ ok: true, entryCount: (merged.entries || []).length });
+
+      // Server-side notification: fire once when entry count crosses a multiple of 5
+      const newCount = (merged.entries || []).length;
+      let lastNotified = 0;
+      try { const ln = await kv.get(NOTIFY_KEY); if (ln != null) lastNotified = parseInt(ln, 10) || 0; } catch (e) {}
+      const newThreshold = Math.floor(newCount / 5) * 5;
+      if (newThreshold > 0 && newThreshold > lastNotified && newCount >= newThreshold) {
+        await kv.set(NOTIFY_KEY, newThreshold);
+        await sendNotification(newCount, merged.config);
+      }
+
+      return res.status(200).json({ ok: true, entryCount: newCount });
     }
     res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
