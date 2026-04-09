@@ -38,6 +38,7 @@ export default async function handler(req, res) {
     }
 
     // 3. Build name → scores map from ESPN
+    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const espnMap = {};
     comp.competitors.forEach(c => {
       const athlete = c.athlete || {};
@@ -48,12 +49,14 @@ export default async function handler(req, res) {
       const isCut = status.type && (status.type.id === '3' || status.type.description === 'Cut');
       espnMap[lastName] = { rounds, isCut, fullName: name };
       espnMap[name] = { rounds, isCut, fullName: name };
+      espnMap[norm(lastName)] = { rounds, isCut, fullName: name };
+      espnMap[norm(name)] = { rounds, isCut, fullName: name };
     });
 
     // 4. Update golfer scores
     let updates = 0;
     state.golfers.forEach(g => {
-      const match = espnMap[g.name];
+      const match = espnMap[g.name] || espnMap[norm(g.name)];
       if (!match) return;
       for (let r = 0; r < 4; r++) {
         const espnScore = match.rounds[r] != null ? match.rounds[r] : null;
