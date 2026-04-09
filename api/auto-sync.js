@@ -16,6 +16,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, reason: 'No pool state found' });
     }
 
+    // Check if auto-sync is enabled by commissioner
+    if (!state.config || !state.config.autoSync) {
+      return res.status(200).json({ ok: false, reason: 'Auto-sync is disabled' });
+    }
+
     // 2. Fetch ESPN leaderboard
     const espnRes = await fetch(ESPN_URL, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; best4golf/1.0)' }

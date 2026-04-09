@@ -262,6 +262,12 @@ function rSetup(){
   const lr=$('div',{style:{marginTop:'16px',display:'flex',gap:'12px',alignItems:'center'}});
   lr.append($('button',{className:'btn '+(c.locked?'btn-d':'btn-g'),onClick:()=>{S.config.locked=!c.locked;save();R();}},c.locked?'Unlock entries':'Lock entries'),$('span',{className:'sub'},c.locked?'Entries are locked':'Entries are open'));card.append(lr);
 
+  // Auto-sync toggle
+  const autoSyncRow=$('div',{style:{display:'flex',gap:'12px',alignItems:'center',marginTop:'12px'}});
+  const autoSyncOn=!!S.config.autoSync;
+  autoSyncRow.append($('button',{className:'btn '+(autoSyncOn?'btn-d':'btn-g'),onClick:()=>{S.config.autoSync=!S.config.autoSync;save();R();}},autoSyncOn?'Disable auto-sync':'Enable auto-sync'),$('span',{className:'sub'},autoSyncOn?'ESPN scores sync every 15 minutes automatically':'Auto-sync is off — manual sync only'));
+  card.append(autoSyncRow);
+
   // Sync from server button
   const syncRow=$('div',{style:{display:'flex',gap:'12px',alignItems:'center',marginTop:'12px'}});
   const syncBtn=$('button',{className:'btn btn-o',onClick:async()=>{
