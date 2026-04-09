@@ -109,7 +109,27 @@ async function _set(k,v){
   try{localStorage.setItem(k,v);}catch(e){}
 }
 async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}if(S.golfers.length===0){S.golfers=MASTERS_2026_FIELD.map(n=>({name:n,scores:[null,null,null,null],cutStatus:''}));save();}S.loaded=true;R();}
-async function save(){await _set(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));}
+async function save(){
+  // Read-before-write merge: pull server state first, merge, then save
+  try{
+    if(_useAPI){
+      const r=await fetch('/api/data');if(r.ok){
+        const server=await r.json();
+        if(server&&server.entries){
+          // Merge server entries not in local state (added by other devices)
+          const localIds=new Set(S.entries.map(e=>e.id));
+          server.entries.forEach(e=>{if(!localIds.has(e.id))S.entries.push(e);});
+          S.entries.sort((a,b)=>(parseInt(a.id,10)||0)-(parseInt(b.id,10)||0));
+        }
+        if(server&&server.golfers){
+          const localNames=new Set(S.golfers.map(g=>g.name));
+          server.golfers.forEach(g=>{if(!localNames.has(g.name))S.golfers.push(g);});
+        }
+      }
+    }
+  }catch(e){/* offline — fall through to save what we have */}
+  await _set(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));
+}
 async function checkPin(){
   S.pinIsNew=false;S.pinChecked=true;R();
 }
@@ -241,6 +261,28 @@ function rSetup(){
   pg.append(mf('Winning golfer','winnerGolfer','text',c.winnerGolfer),mf('Winner final score (total strokes)','winnerScore','number',c.winnerScore));post.append(pg);card.append(post);
   const lr=$('div',{style:{marginTop:'16px',display:'flex',gap:'12px',alignItems:'center'}});
   lr.append($('button',{className:'btn '+(c.locked?'btn-d':'btn-g'),onClick:()=>{S.config.locked=!c.locked;save();R();}},c.locked?'Unlock entries':'Lock entries'),$('span',{className:'sub'},c.locked?'Entries are locked':'Entries are open'));card.append(lr);
+
+  // Sync from server button
+  const syncRow=$('div',{style:{display:'flex',gap:'12px',alignItems:'center',marginTop:'12px'}});
+  const syncBtn=$('button',{className:'btn btn-o',onClick:async()=>{
+    syncBtn.textContent='Syncing...';syncBtn.disabled=true;
+    try{
+      const r=await fetch('/api/data');if(!r.ok)throw new Error('Server error');
+      const server=await r.json();
+      if(server&&server.entries){
+        const localIds=new Set(S.entries.map(e=>e.id));
+        let added=0;
+        server.entries.forEach(e=>{if(!localIds.has(e.id)){S.entries.push(e);added++;}});
+        S.entries.sort((a,b)=>(parseInt(a.id,10)||0)-(parseInt(b.id,10)||0));
+        if(server.golfers){const localNames=new Set(S.golfers.map(g=>g.name));server.golfers.forEach(g=>{if(!localNames.has(g.name))S.golfers.push(g);});}
+        await save();
+        S.successMsg=added>0?'Synced! '+added+' new entries merged from server.':'Already in sync — no new entries on server.';
+      }else{S.successMsg='Server returned no data.';}
+    }catch(e){S.successMsg='Sync failed: '+e.message;}
+    syncBtn.disabled=false;syncBtn.textContent='Sync from server';R();
+  }});syncBtn.textContent='Sync from server';
+  syncRow.append(syncBtn,$('span',{className:'sub'},'Pull missing entries from server (safety net)'));
+  card.append(syncRow);
 
   // QR Code Section
   const qrSec=$('div',{className:'qr-section'});
