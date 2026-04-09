@@ -51,7 +51,12 @@ export default async function handler(req, res) {
       const prevEntryCount = (existing && existing.entries) ? existing.entries.length : 0;
       let merged = incoming;
 
-      if (existing && existing.entries && incoming.entries) {
+      // Reject empty POSTs that would wipe data
+      if ((!incoming.entries || incoming.entries.length === 0) && prevEntryCount > 0) {
+        return res.status(400).json({ error: 'Rejected: empty POST would wipe existing entries', existingCount: prevEntryCount });
+      }
+
+      if (existing && existing.entries) {
         // Merge entries: deduplicate by id, incoming wins on conflict
         const entryMap = {};
         (existing.entries || []).forEach(e => { entryMap[e.id] = e; });
