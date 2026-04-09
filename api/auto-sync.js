@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     }
 
     // 3. Build name → scores map from ESPN
-    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ø/g,'o').replace(/Ø/g,'O').replace(/æ/g,'ae').replace(/Æ/g,'Ae').replace(/ß/g,'ss');
     const espnMap = {};
     comp.competitors.forEach(c => {
       const athlete = c.athlete || {};
