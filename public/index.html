@@ -675,7 +675,7 @@ function rLeaderboard(){
     const vs=e.vsPar!=null?(e.vsPar>0?'+'+e.vsPar:e.vsPar===0?'E':String(e.vsPar)):'';
     row.append($('td',{style:{color:(e.vsPar||0)<0?'var(--red)':'var(--dk)',fontWeight:'600'}},vs));
     const ppDiff=(!e.eliminated&&e.best4!=null&&pp.score>0)?e.best4-pp.score:null;
-    row.append($('td',{style:{fontSize:'12px',fontWeight:'600',color:ppDiff!=null?(ppDiff<=5?'var(--green)':ppDiff<=15?'var(--dk)':'var(--red)'):'var(--med)'}},ppDiff!=null?'+'+ppDiff:'\u2014'));
+    row.append($('td',{style:{fontSize:'12px',fontWeight:'600',color:ppDiff!=null?(ppDiff<=5?'var(--green)':ppDiff<=15?'var(--dk)':'var(--red)'):'var(--med)'}},ppDiff!=null?(ppDiff>=0?'+'+ppDiff:String(ppDiff)):'\u2014'));
     const ct=$('td');if(e.mcCount>0)ct.append($('span',{className:'badge '+(e.mcCount>=2?'bg-lr':'bg-warn')},e.mcCount+' MC'));else ct.textContent='0';row.append(ct);
     row.append($('td',{className:'left',style:{fontSize:'12px'}},e.droppedPlayer||(e.eliminated?'N/A':'\u2014')));
     if(isA){row.append($('td',null,e.tbPred!=null?String(e.tbPred):'—'));row.append($('td',{style:{fontWeight:'700',color:e.winnings>0?'var(--green)':'inherit'}},e.winnings>0?'$'+Math.round(e.winnings).toLocaleString():''));}
