@@ -946,7 +946,7 @@ async function espnSync(){
   try{
     let data;
     const proxyUrl='/api/espn';
-    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard';
     try{const r=await fetch(proxyUrl);data=await r.json();}
     catch(e){const r=await fetch(directUrl);data=await r.json();}
 
@@ -992,7 +992,7 @@ async function espnImportField(){
   try{
     let data;
     const proxyUrl='/api/espn';
-    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard';
     try{const r=await fetch(proxyUrl);data=await r.json();}
     catch(e){try{const r2=await fetch(directUrl);data=await r2.json();}catch(e2){}}
     if(!data||!data.events||!data.events.length){S.syncStatus=null;alert('No active tournament found on ESPN.');R();return;}
