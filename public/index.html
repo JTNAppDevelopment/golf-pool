@@ -630,24 +630,70 @@ function rEntryList(isA){
     tb.append(row);});tbl.append(tb);w.append(tbl);card.append(w);return card;
 }
 
+function rMastersBoard(){
+  const card=$('div',{className:'card',style:{padding:'0',overflow:'hidden'}});
+  const hdr=$('div',{style:{background:'#006747',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}});
+  hdr.append($('span',{style:{color:'#FFD700',fontFamily:'Georgia,serif',fontWeight:'700',fontSize:'18px'}},'Masters Tournament'));
+  hdr.append($('span',{style:{color:'rgba(255,255,255,0.7)',fontSize:'11px'}},'Live via ESPN'));
+  card.append(hdr);
+  const wrap=$('div',{style:{maxHeight:'340px',overflowY:'auto'}});
+  const tbl=$('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'13px'}});
+  const thead=$('tr',{style:{background:'#004D2F',color:'#fff',position:'sticky',top:'0',zIndex:'1'}});
+  ['Pos','Player','To Par','Thru','Today'].forEach(h=>{
+    thead.append($('th',{style:{padding:'6px 8px',fontWeight:'600',fontSize:'11px',textAlign:h==='Player'?'left':'center',borderBottom:'1px solid #006747'}},h));
+  });
+  tbl.append($('thead',null,thead));
+  const tb=$('tbody');
+  if(S._liveBoard&&S._liveBoard.length){
+    S._liveBoard.forEach((g,i)=>{
+      const row=$('tr',{style:{borderBottom:'1px solid #E8F5E9',background:i%2===0?'#fff':'#F5FFF5'}});
+      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontWeight:'600',color:'#006747',fontSize:'12px'}},g.pos||''));
+      row.append($('td',{style:{padding:'5px 8px',fontWeight:'600',fontSize:'13px'}},g.fullName||g.name));
+      const parVal=g.scoreToPar||'';
+      const parColor=parVal.startsWith('-')?'#CC0000':parVal==='E'?'#333':'#006747';
+      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontWeight:'700',color:parColor,fontSize:'14px'}},parVal));
+      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontSize:'12px',color:'#666'}},g.completed?'F':(g.thru||'')));
+      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontSize:'12px',color:'#666'}},g.today||''));
+      tb.append(row);
+    });
+  } else {
+    const nr=$('tr');nr.append($('td',{colSpan:'5',style:{padding:'20px',textAlign:'center',color:'var(--med)'}},'Live leaderboard loading...'));tb.append(nr);
+  }
+  tbl.append(tb);wrap.append(tbl);card.append(wrap);
+  return card;
+}
+
 function rLeaderboard(){
   const isA=S.isAdmin,{scored:sc,totalPool:tp}=scoring(),display=isA?sc:playerView();
+  const frag=document.createDocumentFragment();
+
+  // Masters live leaderboard for players (above entry board)
+  if(!isA){
+    frag.append(rMastersBoard());
+    // Fetch live board if not loaded
+    if(!S._liveBoard){
+      fetch('/api/data?key=live-leaderboard').then(r=>r.json()).then(d=>{if(Array.isArray(d)&&d.length){S._liveBoard=d;R();}}).catch(()=>{});
+    }
+  }
+
   const card=$('div',{className:'card'}),hdr=$('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'8px'}});
-  hdr.append($('h2',{className:'hd'},'Leaderboard'));
+  hdr.append($('h2',{className:'hd'},isA?'Leaderboard':'Pool Standings'));
   const bg=$('div',{style:{display:'flex',gap:'6px'}});
   ['R1','R2','R3','R4'].forEach((l,i)=>{const hd=S.golfers.some(g=>g.scores[i]!=null),pub=S.config.publishedRounds[i],show=isA||pub;
     bg.append($('span',{className:'badge',style:{background:hd&&show?'var(--lt-green)':'var(--gray)',color:hd&&show?'var(--green)':'var(--med)'}},l+(pub?' ✓':'')));});
   hdr.append(bg);card.append(hdr);
   const act=display.filter(e=>!e.eliminated).length,eli=display.filter(e=>e.eliminated).length;
   const pp=calcPerfectPick();
-  const m=$('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'12px',margin:'16px 0'}});
-  [{l:'Entries',v:S.entries.length},{l:'Active',v:act,c:'var(--green)'},{l:'Eliminated',v:eli,c:'var(--red)'},{l:'Pool',v:'$'+tp.toLocaleString()},{l:'Perfect Pick',v:pp.score||'\u2014',c:'var(--dk-green)'}].forEach(x=>{
-    m.append($('div',{className:'metric'},$('div',{className:'lbl2'},x.l),$('div',{className:'val',style:x.c?{color:x.c}:{}},String(x.v))));});
-  if(pp.names.length){
-    const ppSub=$('div',{style:{fontSize:'11px',color:'var(--med)',textAlign:'center',marginTop:'-8px',marginBottom:'8px'}});
-    ppSub.textContent='Perfect Pick = the 4 lowest-scoring golfers in the field: '+pp.names.join(' \u00b7 ')+'. The +PP column shows how many strokes each entry is off this pace.';
-    card.append(m);card.append(ppSub);
-  } else card.append(m);
+  if(isA){
+    const m=$('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'12px',margin:'16px 0'}});
+    [{l:'Entries',v:S.entries.length},{l:'Active',v:act,c:'var(--green)'},{l:'Eliminated',v:eli,c:'var(--red)'},{l:'Pool',v:'$'+tp.toLocaleString()},{l:'Perfect Pick',v:pp.score||'\u2014',c:'var(--dk-green)'}].forEach(x=>{
+      m.append($('div',{className:'metric'},$('div',{className:'lbl2'},x.l),$('div',{className:'val',style:x.c?{color:x.c}:{}},String(x.v))));});
+    if(pp.names.length){
+      const ppSub=$('div',{style:{fontSize:'11px',color:'var(--med)',textAlign:'center',marginTop:'-8px',marginBottom:'8px'}});
+      ppSub.textContent='Perfect Pick = the 4 lowest-scoring golfers in the field: '+pp.names.join(' \u00b7 ')+'. The +PP column shows how many strokes each entry is off this pace.';
+      card.append(m);card.append(ppSub);
+    } else card.append(m);
+  }
   if(!display.length){
     card.append($('p',{className:'sub',style:{textAlign:'center',padding:'20px'}},'No standings yet.'));
     const foot0=$('div',{style:{marginTop:'16px',padding:'14px 18px',background:'var(--gray)',borderRadius:'8px',fontSize:'13px',lineHeight:'1.6',color:'var(--dk)'}});
@@ -656,7 +702,7 @@ function rLeaderboard(){
       +'Once scores are entered, the +PP column will show how many strokes each entry is behind that theoretical best. '
       +'<strong>Lower is better.</strong> A +0 would mean you picked perfectly.';
     card.append(foot0);
-    return card;
+    frag.append(card);return frag;
   }
   const w=$('div',{className:'overflow-x'}),tbl=$('table');
   const hds=['#','Participant','Score','vs Par','+PP','Cuts','Dropped'];if(isA)hds.push('TB','Winnings');
@@ -694,7 +740,7 @@ function rLeaderboard(){
       +'<strong>Lower is better.</strong> A +0 would mean you picked perfectly.';
   }
   card.append(foot);
-  return card;
+  frag.append(card);return frag;
 }
 
 function rScores(){

@@ -72,7 +72,27 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, updates: 0, reason: 'No score changes' });
     }
 
-    // 5. Save updated state
+    // 5. Save live leaderboard data for player-facing display
+    const liveBoard = comp.competitors.map(c => {
+      const a = c.athlete || {};
+      const lastName = a.lastName || (a.displayName || '').split(' ').pop() || '';
+      const st = c.status || {};
+      const pos = st.position ? st.position.displayName : '';
+      const scoreToPar = c.score ? c.score.displayValue : '';
+      const thru = st.thru != null ? st.displayThru || String(st.thru) : '';
+      const completed = st.type ? st.type.completed : false;
+      const movement = c.movement || 0;
+      const today = st.todayDetail || '';
+      const rounds = (c.linescores || []).map(ls => ls.displayValue != null ? ls.displayValue : '');
+      return { name: lastName, fullName: a.displayName || '', pos, scoreToPar, thru, completed, movement, today, rounds };
+    }).sort((a, b) => {
+      const aPos = parseInt((a.pos || '').replace('T', ''), 10) || 999;
+      const bPos = parseInt((b.pos || '').replace('T', ''), 10) || 999;
+      return aPos - bPos;
+    });
+    await kv.set('pool:live-leaderboard', liveBoard);
+
+    // 6. Save updated state
     await kv.set(KEY, state);
 
     return res.status(200).json({

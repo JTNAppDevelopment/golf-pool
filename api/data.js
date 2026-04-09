@@ -41,6 +41,10 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      if (req.query && req.query.key === 'live-leaderboard') {
+        const lb = await kv.get('pool:live-leaderboard');
+        return res.status(200).json(lb || []);
+      }
       const data = await kv.get(KEY);
       return res.status(200).json(data || null);
     }
