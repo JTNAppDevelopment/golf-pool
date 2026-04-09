@@ -108,7 +108,22 @@ async function _set(k,v){
   if(_useAPI&&k===SKEY){try{await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:v});}catch(e){}}
   try{localStorage.setItem(k,v);}catch(e){}
 }
-async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}if(S.golfers.length===0){S.golfers=MASTERS_2026_FIELD.map(n=>({name:n,scores:[null,null,null,null],cutStatus:''}));save();}S.loaded=true;R();}
+async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}if(S.golfers.length===0){S.golfers=MASTERS_2026_FIELD.map(n=>({name:n,scores:[null,null,null,null],cutStatus:''}));save();}S.loaded=true;R();startAutoRefresh();}
+function startAutoRefresh(){
+  setInterval(async()=>{
+    try{
+      if(_useAPI){
+        const r=await fetch('/api/data');if(r.ok){const d=await r.json();if(d&&d.golfers){
+          let changed=false;
+          d.golfers.forEach((g,i)=>{const lg=S.golfers.find(x=>x.name===g.name);if(lg){for(let r2=0;r2<4;r2++){if(g.scores[r2]!==lg.scores[r2]){lg.scores[r2]=g.scores[r2];changed=true;}}if(g.cutStatus!==lg.cutStatus){lg.cutStatus=g.cutStatus;changed=true;}}});
+          if(d.entries&&d.entries.length!==S.entries.length){const localIds=new Set(S.entries.map(e=>e.id));d.entries.forEach(e=>{if(!localIds.has(e.id)){S.entries.push(e);changed=true;}});S.entries.sort((a,b)=>(parseInt(a.id,10)||0)-(parseInt(b.id,10)||0));}
+          if(changed){try{localStorage.setItem(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));}catch(e){}R();}
+        }}
+        const lb=await fetch('/api/data?key=live-leaderboard');if(lb.ok){const lbd=await lb.json();if(Array.isArray(lbd)&&lbd.length){S._liveBoard=lbd;R();}}
+      }
+    }catch(e){}
+  },120000);
+}
 async function save(){
   // Read-before-write merge: pull server state first, merge, then save
   try{
