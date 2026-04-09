@@ -44,19 +44,29 @@ export default async function handler(req, res) {
       const athlete = c.athlete || {};
       const name = athlete.displayName || athlete.shortName || '';
       const lastName = athlete.lastName || name.split(' ').pop() || '';
+      const firstName = (athlete.displayName || '').split(' ')[0] || '';
       const rounds = (c.linescores || []).map(ls => ls.value != null ? ls.value : null);
       const status = c.status || {};
       const isCut = status.type && (status.type.id === '3' || status.type.description === 'Cut');
-      espnMap[lastName] = { rounds, isCut, fullName: name };
-      espnMap[name] = { rounds, isCut, fullName: name };
-      espnMap[norm(lastName)] = { rounds, isCut, fullName: name };
-      espnMap[norm(name)] = { rounds, isCut, fullName: name };
+      const entry = { rounds, isCut, fullName: name };
+      espnMap[lastName] = entry;
+      espnMap[name] = entry;
+      espnMap[norm(lastName)] = entry;
+      espnMap[norm(name)] = entry;
+      // Initial + last name variants: "N. Hojgaard", "Z. Johnson", "M. Kim"
+      if (firstName) {
+        const initial = firstName[0];
+        espnMap[initial + '. ' + lastName] = entry;
+        espnMap[initial + '. ' + norm(lastName)] = entry;
+      }
+      // Also store by just last name lowercased for Mickelson-type matches
+      espnMap[norm(lastName).toLowerCase()] = entry;
     });
 
     // 4. Update golfer scores
     let updates = 0;
     state.golfers.forEach(g => {
-      const match = espnMap[g.name] || espnMap[norm(g.name)];
+      const match = espnMap[g.name] || espnMap[norm(g.name)] || espnMap[norm(g.name).toLowerCase()];
       if (!match) return;
       for (let r = 0; r < 4; r++) {
         const espnScore = match.rounds[r] != null ? match.rounds[r] : null;
