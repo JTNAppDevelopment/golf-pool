@@ -1,10 +1,14 @@
 {
   "version": 2,
+  "crons": [
+    { "path": "/api/auto-sync", "schedule": "*/15 * * * *" }
+  ],
   "routes": [
-    { "src": "/api/espn",   "dest": "/api/espn.js"   },
-    { "src": "/api/data",   "dest": "/api/data.js"   },
-    { "src": "/api/pin",    "dest": "/api/pin.js"    },
-    { "src": "/api/notify", "dest": "/api/notify.js" },
-    { "src": "/(.*)",      "dest": "/public/index.html" }
+    { "src": "/api/espn",      "dest": "/api/espn.js"      },
+    { "src": "/api/data",      "dest": "/api/data.js"      },
+    { "src": "/api/pin",       "dest": "/api/pin.js"       },
+    { "src": "/api/notify",    "dest": "/api/notify.js"    },
+    { "src": "/api/auto-sync", "dest": "/api/auto-sync.js" },
+    { "src": "/(.*)",          "dest": "/public/index.html" }
   ]
 }
