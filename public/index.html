@@ -631,36 +631,36 @@ function rEntryList(isA){
 }
 
 function rMastersBoard(){
-  const card=$('div',{className:'card',style:{padding:'0',overflow:'hidden'}});
-  const hdr=$('div',{style:{background:'#006747',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}});
-  hdr.append($('span',{style:{color:'#FFD700',fontFamily:'Georgia,serif',fontWeight:'700',fontSize:'18px'}},'Masters Tournament'));
-  hdr.append($('span',{style:{color:'rgba(255,255,255,0.7)',fontSize:'11px'}},'Live via ESPN'));
+  const card=$('div',{style:{padding:'0',overflow:'hidden',borderRadius:'10px',border:'3px solid #004D2F',marginBottom:'16px',background:'#1a472a'}});
+  const hdr=$('div',{style:{background:'#1a472a',padding:'14px 16px 8px',textAlign:'center'}});
+  hdr.append($('div',{style:{color:'#FFD700',fontFamily:'Georgia,serif',fontWeight:'700',fontSize:'22px',letterSpacing:'3px',textTransform:'uppercase'}},'LEADERS'));
+  hdr.append($('div',{style:{color:'rgba(255,255,255,0.5)',fontSize:'10px',marginTop:'2px',letterSpacing:'1px'}},'LIVE VIA ESPN'));
   card.append(hdr);
-  const wrap=$('div',{style:{maxHeight:'340px',overflowY:'auto'}});
-  const tbl=$('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'13px'}});
-  const thead=$('tr',{style:{background:'#004D2F',color:'#fff',position:'sticky',top:'0',zIndex:'1'}});
-  ['Pos','Player','To Par','Thru','Today'].forEach(h=>{
-    thead.append($('th',{style:{padding:'6px 8px',fontWeight:'600',fontSize:'11px',textAlign:h==='Player'?'left':'center',borderBottom:'1px solid #006747'}},h));
+  const wrap=$('div',{style:{maxHeight:'380px',overflowY:'auto'}});
+  const tbl=$('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:'13px',fontFamily:'Arial,sans-serif'}});
+  const thead=$('tr',{style:{background:'#004D2F',position:'sticky',top:'0',zIndex:'1'}});
+  ['POS','PLAYER','TO PAR','THRU','TODAY'].forEach(h=>{
+    thead.append($('th',{style:{padding:'7px 8px',fontWeight:'700',fontSize:'10px',textAlign:h==='PLAYER'?'left':'center',color:'#FFD700',letterSpacing:'1px',borderBottom:'2px solid #FFD700'}},h));
   });
   tbl.append($('thead',null,thead));
   const tb=$('tbody');
   if(S._liveBoard&&S._liveBoard.length){
     S._liveBoard.forEach((g,i)=>{
-      const row=$('tr',{style:{borderBottom:'1px solid #E8F5E9',background:i%2===0?'#fff':'#F5FFF5'}});
-      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontWeight:'600',color:'#006747',fontSize:'12px'}},g.pos||''));
-      row.append($('td',{style:{padding:'5px 8px',fontWeight:'600',fontSize:'13px'}},g.fullName||g.name));
+      const row=$('tr',{style:{borderBottom:'1px solid #2d5a3f',background:i%2===0?'#1a472a':'#1f5030'}});
+      row.append($('td',{style:{padding:'6px 8px',textAlign:'center',fontWeight:'700',color:'#fff',fontSize:'12px'}},g.pos||''));
+      row.append($('td',{style:{padding:'6px 8px',fontWeight:'600',fontSize:'13px',color:'#fff'}},g.fullName||g.name));
       const parVal=g.scoreToPar||'';
-      const parColor=parVal.startsWith('-')?'#CC0000':parVal==='E'?'#006747':'#333';
-      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontWeight:'700',color:parColor,fontSize:'14px'}},parVal));
-      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontSize:'12px',color:'#666'}},g.completed?'F':(g.thru||'')));
+      const parColor=parVal.startsWith('-')?'#FF4444':parVal==='E'?'#fff':'#fff';
+      row.append($('td',{style:{padding:'6px 8px',textAlign:'center',fontWeight:'700',color:parColor,fontSize:'15px'}},parVal));
+      row.append($('td',{style:{padding:'6px 8px',textAlign:'center',fontSize:'12px',color:'rgba(255,255,255,0.6)'}},g.completed?'F':(g.thru||'')));
       const todayRaw=g.today||'';
       const todayPar=todayRaw.replace(/\(.*\)/,'').trim();
-      const todayColor=todayPar.startsWith('-')?'#CC0000':todayPar==='E'?'#006747':'#333';
-      row.append($('td',{style:{padding:'5px 8px',textAlign:'center',fontSize:'12px',fontWeight:'600',color:todayColor}},todayPar));
+      const todayColor=todayPar.startsWith('-')?'#FF4444':todayPar==='E'?'#fff':'#fff';
+      row.append($('td',{style:{padding:'6px 8px',textAlign:'center',fontSize:'12px',fontWeight:'600',color:todayColor}},todayPar));
       tb.append(row);
     });
   } else {
-    const nr=$('tr');nr.append($('td',{colSpan:'5',style:{padding:'20px',textAlign:'center',color:'var(--med)'}},'Live leaderboard loading...'));tb.append(nr);
+    const nr=$('tr');nr.append($('td',{colSpan:'5',style:{padding:'20px',textAlign:'center',color:'rgba(255,255,255,0.5)'}},'Live leaderboard loading...'));tb.append(nr);
   }
   tbl.append(tb);wrap.append(tbl);card.append(wrap);
   return card;
