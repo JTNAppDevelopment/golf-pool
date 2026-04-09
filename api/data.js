@@ -4,15 +4,13 @@ import { kv } from '@vercel/kv';
 const KEY = 'pool:state';
 const NOTIFY_KEY = 'pool:last-notified-count';
 
-async function sendNotification(entryCount, config) {
+async function sendEntryNotification(totalCount, prevCount, entryRows, config) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
   const commEmail = (config && config.commEmail) || 'jtnindc@gmail.com';
   const poolName = (config && config.name) || 'Golf Pool';
   const appUrl = (config && config.appUrl) || 'https://best4.golf';
-  const batch = Math.ceil(entryCount / 5);
-  const from = ((batch - 1) * 5) + 1;
-  const to = batch * 5;
+  const newCount = totalCount - prevCount;
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -23,8 +21,13 @@ async function sendNotification(entryCount, config) {
       body: JSON.stringify({
         from: 'best4.golf <onboarding@resend.dev>',
         to: [commEmail],
-        subject: `best4.golf — ${poolName}: entries ${from}–${to} received`,
-        html: `<p>Entries <strong>${from}–${to}</strong> have been submitted for <strong>${poolName}</strong>.</p><p>Total entries so far: <strong>${entryCount}</strong></p><p><a href="${appUrl}">Open pool</a></p>`
+        subject: `best4.golf — ${poolName}: entry #${totalCount} received`,
+        html: `<p><strong>${newCount} new ${newCount === 1 ? 'entry' : 'entries'}</strong> for <strong>${poolName}</strong>. Total: <strong>${totalCount}</strong></p>` +
+          `<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-size:13px;margin:12px 0;">` +
+          `<tr style="background:#006747;color:#fff;"><th>#</th><th>Name</th><th>Picks</th><th>TB</th><th>PTW</th><th>Tip</th></tr>` +
+          entryRows +
+          `</table>` +
+          `<p><a href="${appUrl}">Open pool</a></p>`
       })
     });
   } catch (e) { /* silent fail */ }
@@ -85,14 +88,23 @@ export default async function handler(req, res) {
 
       await kv.set(KEY, merged);
 
-      // Server-side notification: fire once when entry count crosses a multiple of 5
+      // Server-side notification: fire for every new entry
       const newCount = (merged.entries || []).length;
       let lastNotified = 0;
       try { const ln = await kv.get(NOTIFY_KEY); if (ln != null) lastNotified = parseInt(ln, 10) || 0; } catch (e) {}
-      const newThreshold = Math.floor(newCount / 5) * 5;
-      if (newThreshold > 0 && newThreshold > lastNotified && newCount >= newThreshold) {
-        await kv.set(NOTIFY_KEY, newThreshold);
-        await sendNotification(newCount, merged.config);
+      if (newCount > lastNotified) {
+        // Find new entries to include in email
+        const newEntries = (merged.entries || []).slice(lastNotified);
+        const entryLines = newEntries.map((e, i) => {
+          const num = lastNotified + i + 1;
+          const picks = (e.picks || []).join(', ');
+          const tb = e.tbPrediction != null ? e.tbPrediction : '—';
+          const ptw = e.pickWinner || '—';
+          const tip = e.tipValue != null ? (e.tipType === 'pct' ? e.tipValue + '%' : '$' + e.tipValue) : '—';
+          return `<tr><td>${num}</td><td><strong>${e.participant}</strong></td><td>${picks}</td><td>${tb}</td><td>${ptw}</td><td>${tip}</td></tr>`;
+        }).join('');
+        await kv.set(NOTIFY_KEY, newCount);
+        await sendEntryNotification(newCount, lastNotified, entryLines, merged.config);
       }
 
       return res.status(200).json({ ok: true, entryCount: newCount });
