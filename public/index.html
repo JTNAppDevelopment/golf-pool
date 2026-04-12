@@ -1108,16 +1108,7 @@ function applySyncData(){
     else if(S.golfers[m.localIdx].cutStatus!=='MC'&&m.espn.rounds.filter(r=>r!=null).length>=2)S.golfers[m.localIdx].cutStatus='MADE';
   });
   S.syncStatus='applied';
-  // Auto-populate winner after R4
-  const allR4=S.golfers.filter(g=>g.cutStatus!=='MC'&&g.scores[3]!=null&&g.scores[3]!=='');
-  if(allR4.length>0){
-    const withTotals=allR4.map(g=>({name:g.name,total:g.scores.reduce((s,v)=>s+(v||0),0)}));
-    withTotals.sort((a,b)=>a.total-b.total);
-    if(withTotals[0]){
-      S.config.winnerGolfer=withTotals[0].name;
-      S.config.winnerScore=withTotals[0].total;
-    }
-  }
+  // Winner is set manually by commissioner after tournament ends
   save();R();
 }
 
