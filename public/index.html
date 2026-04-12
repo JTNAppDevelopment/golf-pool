@@ -747,8 +747,8 @@ function rLeaderboard(){
     frag.append(card);return frag;
   }
   const w=$('div',{className:'overflow-x'}),tbl=$('table');
-  const hds=['#','Participant','Score','vs Par','+PP','Cuts','Dropped'];if(isA)hds.push('TB','Winnings');
-  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1||i===6?'left':''},t)))));
+  const hds=['#','Participant','vs Par','+PP','Cuts','Dropped'];if(isA)hds.push('TB','Winnings');
+  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1||i===5?'left':''},t)))));
   const tb=$('tbody');display.forEach(e=>{
     const isMe=!isA&&S.playerEmail&&e.email&&e.email.toLowerCase()===S.playerEmail.toLowerCase();
     const bg2=e.eliminated?'var(--lt-red)':(isMe?'#FFF8E1':(e.rank&&e.rank<=3?'var(--lt-green)':'transparent'));
@@ -759,9 +759,8 @@ function rLeaderboard(){
     nameRow.append(document.createTextNode(e.participant));
     if(isMe)nameRow.append($('span',{className:'badge',style:{background:'var(--gold)',color:'var(--dk-green)',fontSize:'9px'}},'YOU'));
     nt.append(nameRow,$('div',{style:{fontSize:'11px',color:'var(--med)'}},e.picks.join(' · ')));row.append(nt);
-    row.append($('td',{style:{fontWeight:'700',fontSize:'15px'}},e.eliminated?'ELIM':(e.best4!=null?String(e.best4):'—')));
     const vs=e.vsPar!=null?(e.vsPar>0?'+'+e.vsPar:e.vsPar===0?'E':String(e.vsPar)):'';
-    row.append($('td',{style:{color:(e.vsPar||0)<0?'var(--red)':'var(--dk)',fontWeight:'600'}},vs));
+    row.append($('td',{style:{color:(e.vsPar||0)<0?'var(--red)':'var(--dk)',fontWeight:'700',fontSize:'15px'}},e.eliminated?'ELIM':vs));
     const ppDiff=(!e.eliminated&&e.best4!=null&&pp.score>0)?e.best4-pp.score:null;
     row.append($('td',{style:{fontSize:'12px',fontWeight:'600',color:ppDiff!=null?(ppDiff<=5?'var(--green)':ppDiff<=15?'var(--dk)':'var(--red)'):'var(--med)'}},ppDiff!=null?(ppDiff>=0?'+'+ppDiff:String(ppDiff)):'\u2014'));
     const ct=$('td');if(e.mcCount>0)ct.append($('span',{className:'badge '+(e.mcCount>=2?'bg-lr':'bg-warn')},e.mcCount+' MC'));else ct.textContent='0';row.append(ct);
@@ -916,15 +915,14 @@ function rScores(){
     const t10Card=$('div',{className:'card'});
     t10Card.append($('h2',{className:'hd',style:{fontSize:'18px'}},'Top 10 entries'));
     const t10tbl=$('table');
-    t10tbl.append($('thead',null,$('tr',null,$('th',null,'#'),$('th',{className:'left'},'Participant'),$('th',null,'Score'),$('th',null,'vs Par'),$('th',null,'+PP'),$('th',null,'Cuts'))));
+    t10tbl.append($('thead',null,$('tr',null,$('th',null,'#'),$('th',{className:'left'},'Participant'),$('th',null,'vs Par'),$('th',null,'+PP'),$('th',null,'Cuts'))));
     const t10tb=$('tbody');
     const pp=calcPerfectPick();
     sc.scored.filter(e=>e.rank!=null&&e.rank<=10).forEach(e=>{
       const row=$('tr',{style:{background:e.rank<=3?'var(--lt-green)':'transparent'}});
       row.append($('td',{style:{fontWeight:'700'}},String(e.rank)));
       row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')));
-      row.append($('td',{style:{fontWeight:'700'}},e.best4!=null?String(e.best4):'--'));
-      row.append($('td',{style:{color:e.vsPar<0?'var(--green)':'var(--dk)'}},e.vsPar!=null?(e.vsPar>=0?'+':'')+e.vsPar:'--'));
+      row.append($('td',{style:{color:e.vsPar<0?'var(--red)':'var(--dk)',fontWeight:'700'}},e.vsPar!=null?(e.vsPar>=0?'+':'')+e.vsPar:'--'));
       const ppDiff=e.best4!=null&&pp.score>0?e.best4-pp.score:null;
       row.append($('td',null,ppDiff!=null?'+'+ppDiff:'--'));
       row.append($('td',{style:{color:e.mcCount?'var(--red)':'var(--med)'}},e.mcCount?e.mcCount+' MC':'0'));
