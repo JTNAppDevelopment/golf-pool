@@ -167,7 +167,9 @@ function scoring(){
   if(S._liveBoard&&S._liveBoard.length){S._liveBoard.forEach(g=>{
     const val=g.scoreToPar;
     let num=0;if(val&&val!=='-'&&val!=='E'){num=parseInt(val,10)||0;}
-    liveParMap[g.name]=num;liveParMap[g.fullName]=num;
+    const _n=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/Ø/g,'O');
+    liveParMap[g.name]=num;liveParMap[g.fullName]=num;liveParMap[_n(g.name)]=num;liveParMap[_n(g.fullName)]=num;
+    if(g.fullName){const fi=g.fullName.split(' ')[0];if(fi)liveParMap[fi[0]+'. '+_n(g.name)]=num;}
   });}
   const wvp=S.config.winnerScore!=null&&S.config.winnerScore!==""?S.config.winnerScore-S.config.par*4:null;
   const sc=S.entries.map(e=>{
@@ -192,7 +194,9 @@ function playerView(){
   const liveParMap={};
   if(S._liveBoard&&S._liveBoard.length){S._liveBoard.forEach(g=>{
     const val=g.scoreToPar;let num=0;if(val&&val!=='-'&&val!=='E'){num=parseInt(val,10)||0;}
-    liveParMap[g.name]=num;liveParMap[g.fullName]=num;
+    const _n=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/Ø/g,'O');
+    liveParMap[g.name]=num;liveParMap[g.fullName]=num;liveParMap[_n(g.name)]=num;liveParMap[_n(g.fullName)]=num;
+    if(g.fullName){const fi=g.fullName.split(' ')[0];if(fi)liveParMap[fi[0]+'. '+_n(g.name)]=num;}
   });}
   const sc=S.entries.map(e=>{
     const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,vsPar:0,isMC:false};const t=g.scores.reduce((s,v,ri)=>s+(vis.includes(ri)?(v||0):0),0);const lp=liveParMap[pn]!=null?liveParMap[pn]:null;return{name:pn,total:t,vsPar:lp,isMC:g.cutStatus==="MC"&&maxR>=1};});
