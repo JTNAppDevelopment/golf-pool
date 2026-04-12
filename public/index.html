@@ -181,9 +181,9 @@ function scoring(){
   });
   sc.sort((a,b)=>a.composite-b.composite);let rank=1;
   sc.forEach((e,i)=>{if(e.eliminated){e.rank=null;return;}if(i>0&&e.composite===sc[i-1].composite)e.rank=sc[i-1].rank;else e.rank=rank;rank=i+2;});
-  const pool=S.entries.length*S.config.mainFee,prizes=S.config.splits.map(p=>pool*p/100);
+  const pool=S.entries.length*S.config.mainFee,barStaff=Math.round(pool*0.05),prizePool=pool-barStaff,prizes=S.config.splits.map(p=>prizePool*p/100);
   sc.forEach(e=>{e.winnings=0;if(e.rank==null)return;const ties=sc.filter(o=>o.rank===e.rank).length;let ps=0;for(let pos=e.rank;pos<e.rank+ties&&pos<=prizes.length;pos++)ps+=prizes[pos-1];e.winnings=ps/ties;});
-  return{scored:sc,roundsPlayed:rp,totalPool:pool,prizes,wvp};
+  return{scored:sc,roundsPlayed:rp,totalPool:pool,barStaff,prizePool,prizes,wvp};
 }
 
 function playerView(){
@@ -930,8 +930,14 @@ function rScores(){
   return frag;
 }
 function rPayouts(){
-  const{scored:sc,totalPool:tp,prizes:pr}=scoring(),winners=sc.filter(e=>e.winnings>0);
+  const{scored:sc,totalPool:tp,barStaff:bs,prizePool:pp2,prizes:pr}=scoring(),winners=sc.filter(e=>e.winnings>0);
   const frag=document.createDocumentFragment(),card=$('div',{className:'card'});card.append($('h2',{className:'hd'},'Main pool payouts'));
+  // Pool breakdown
+  const poolBreak=$('div',{style:{display:'flex',gap:'12px',marginBottom:'12px',flexWrap:'wrap'}});
+  poolBreak.append($('div',{className:'metric',style:{flex:'1',minWidth:'100px'}},$('div',{className:'lbl2'},'Total pool'),$('div',{className:'val'},'$'+tp.toLocaleString())));
+  poolBreak.append($('div',{className:'metric',style:{flex:'1',minWidth:'100px'}},$('div',{className:'lbl2'},'Bar staff (5%)'),$('div',{className:'val',style:{color:'var(--gold)'}},'$'+bs.toLocaleString())));
+  poolBreak.append($('div',{className:'metric',style:{flex:'1',minWidth:'100px'}},$('div',{className:'lbl2'},'Prize pool'),$('div',{className:'val',style:{color:'var(--green)'}},'$'+pp2.toLocaleString())));
+  card.append(poolBreak);
   const pg=$('div',{className:'grid3',style:{margin:'16px 0'}});
   ['1st','2nd','3rd'].forEach((l,i)=>{const bgs=['#FFF8E1','#F5F5F5','#FBE9E7'];
     pg.append($('div',{style:{padding:'16px',borderRadius:'8px',background:bgs[i],textAlign:'center',border:i===0?'1px solid var(--gold)':'1px solid var(--border)'}},
