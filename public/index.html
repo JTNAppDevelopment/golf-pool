@@ -181,7 +181,7 @@ function scoring(){
     if(!elim){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
     const vp=b4vp!=null?b4vp:(b4!=null?b4-S.config.par*4*rp:null);
     const tbp=e.tbPrediction!=null&&e.tbPrediction!==""?Number(e.tbPrediction):null;
-    const tbv=tbp!=null&&wvp!=null&&tbp>=wvp,tbd=tbp!=null&&wvp!=null?Math.abs(wvp-tbp):9999,comp=b4!=null?b4*1000000+(tbv?0:500000)+tbd:9999999999;
+    const tbv=tbp!=null&&wvp!=null&&tbp>=wvp,tbd=tbp!=null&&wvp!=null?Math.abs(wvp-tbp):9999,comp=vp!=null?(vp+500)*1000000+(tbv?0:500000)+tbd:9999999999;
     return{...e,playerData:pd,mcCount:mc,eliminated:elim,best4:b4,droppedPlayer:drop,vsPar:vp,tbPred:tbp,tbValid:tbv,tbDiff:tbd,composite:comp};
   });
   sc.sort((a,b)=>a.composite-b.composite);let rank=1;
@@ -207,8 +207,8 @@ function playerView(){
     if(!elim&&pd.some(p=>p.total>0)){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
     const vp=b4vp!=null?b4vp:(b4!=null?b4-S.config.par*vis.length*4:null);
     return{...e,playerData:pd,mcCount:mc,eliminated:elim,best4:b4,droppedPlayer:drop,vsPar:vp};
-  }).filter(e=>e.best4!=null).sort((a,b)=>(a.best4||9999)-(b.best4||9999));
-  let rank=1;sc.forEach((e,i)=>{if(e.eliminated){e.rank=null;return;}if(i>0&&e.best4===sc[i-1].best4)e.rank=sc[i-1].rank;else e.rank=rank;rank=i+2;});
+  }).filter(e=>e.vsPar!=null).sort((a,b)=>(a.vsPar!=null?a.vsPar:9999)-(b.vsPar!=null?b.vsPar:9999));
+  let rank=1;sc.forEach((e,i)=>{if(e.eliminated){e.rank=null;return;}if(i>0&&e.vsPar===sc[i-1].vsPar)e.rank=sc[i-1].rank;else e.rank=rank;rank=i+2;});
   return sc;
 }
 
