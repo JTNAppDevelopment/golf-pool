@@ -1,7 +1,7 @@
 {
   "version": 2,
   "crons": [
-    { "path": "/api/auto-sync", "schedule": "*/10 * * * *" }
+    { "path": "/api/auto-sync", "schedule": "*/5 * * * *" }
   ],
   "routes": [
     { "src": "/api/espn",      "dest": "/api/espn.js"      },
