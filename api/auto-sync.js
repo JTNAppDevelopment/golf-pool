@@ -45,8 +45,19 @@ export default async function handler(req, res) {
       const name = athlete.displayName || athlete.shortName || '';
       const lastName = athlete.lastName || name.split(' ').pop() || '';
       const firstName = (athlete.displayName || '').split(' ')[0] || '';
-      const rounds = (c.linescores || []).map(ls => ls.value != null ? ls.value : null);
       const status = c.status || {};
+      const currentPeriod = status.period || 1;
+      const isCompleted = status.type && status.type.completed;
+      const thru = status.thru || 0;
+      // Only store scores for fully completed rounds
+      // Current round: only store if golfer finished all 18 holes (thru >= 18 or status completed)
+      const rounds = (c.linescores || []).map((ls, ri) => {
+        if (ls.value == null || ls.value === 0) return null;
+        const roundNum = ri + 1;
+        if (roundNum < currentPeriod) return ls.value; // Prior rounds are complete
+        if (roundNum === currentPeriod && (thru >= 18 || isCompleted)) return ls.value; // Current round finished
+        return null; // Round in progress or not started
+      });
       const isCut = status.type && (status.type.id === '3' || status.type.description === 'Cut');
       const entry = { rounds, isCut, fullName: name };
       espnMap[lastName] = entry;
@@ -70,7 +81,7 @@ export default async function handler(req, res) {
       if (!match) return;
       for (let r = 0; r < 4; r++) {
         const espnScore = match.rounds[r] != null ? match.rounds[r] : null;
-        if (espnScore !== null && espnScore !== g.scores[r]) {
+        if (espnScore !== g.scores[r]) {
           g.scores[r] = espnScore;
           updates++;
         }

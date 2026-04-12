@@ -160,10 +160,11 @@ async function submitPin(pin,conf){
 
 function scoring(){
   const gM={};S.golfers.forEach(g=>gM[g.name]=g);
-  const rp=[0,1,2,3].filter(r=>S.golfers.some(g=>g.scores[r]!=null&&g.scores[r]!=="")).length;
+  const activeRounds=[0,1,2,3].filter(r=>S.golfers.some(g=>g.scores[r]!=null&&g.scores[r]!==""&&g.scores[r]!==0));
+  const rp=activeRounds.length;
   const wvp=S.config.winnerScore!=null&&S.config.winnerScore!==""?S.config.winnerScore-S.config.par*4:null;
   const sc=S.entries.map(e=>{
-    const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,isMC:false};return{name:pn,total:g.scores.reduce((s,v)=>s+(v||0),0),isMC:g.cutStatus==="MC"};});
+    const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,isMC:false};return{name:pn,total:activeRounds.reduce((s,r)=>s+(g.scores[r]||0),0),isMC:g.cutStatus==="MC"};});
     const mc=pd.filter(p=>p.isMC).length,elim=mc>=2;let b4=null,drop=null;
     if(!elim){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;b4=so.slice(1).reduce((s,p)=>s+p.total,0);}}
     const vp=b4!=null?b4-S.config.par*4*rp:null,tbp=e.tbPrediction!=null&&e.tbPrediction!==""?Number(e.tbPrediction):null;
