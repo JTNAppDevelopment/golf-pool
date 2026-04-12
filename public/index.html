@@ -144,7 +144,9 @@ async function save(){
       }
     }
   }catch(e){/* offline — fall through to save what we have */}
-  await _set(SKEY,JSON.stringify({config:S.config,golfers:S.golfers,entries:S.entries}));
+  const payload={config:S.config,golfers:S.golfers,entries:S.entries};
+  if(_deletedIds.size>0)payload._deletedIds=Array.from(_deletedIds);
+  await _set(SKEY,JSON.stringify(payload));
 }
 async function checkPin(){
   S.pinIsNew=false;S.pinChecked=true;R();

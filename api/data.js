@@ -65,8 +65,10 @@ export default async function handler(req, res) {
 
       if (existing && existing.entries) {
         // Merge entries: deduplicate by id, incoming wins on conflict
+        // Respect explicit deletions passed from client
+        const deletedIds = new Set(incoming._deletedIds || []);
         const entryMap = {};
-        (existing.entries || []).forEach(e => { entryMap[e.id] = e; });
+        (existing.entries || []).forEach(e => { if (!deletedIds.has(e.id)) entryMap[e.id] = e; });
         (incoming.entries || []).forEach(e => { entryMap[e.id] = e; });
         const mergedEntries = Object.values(entryMap);
         // Sort by id (timestamp) to maintain chronological order
