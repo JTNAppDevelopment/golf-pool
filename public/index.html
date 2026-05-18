@@ -109,7 +109,7 @@ async function _set(k,v){
   if(_useAPI&&k===SKEY){try{await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:v});}catch(e){}}
   try{localStorage.setItem(k,v);}catch(e){}
 }
-async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}if(S.golfers.length===0){S.golfers=MASTERS_2026_FIELD.map(n=>({name:n,scores:[null,null,null,null],cutStatus:''}));save();}S.loaded=true;R();startAutoRefresh();}
+async function load(){await _checkAPI();const raw=await _get(SKEY);if(raw){try{const d=JSON.parse(raw);if(d.config)S.config={...DEF,...d.config};S.golfers=Array.isArray(d.golfers)?d.golfers:[];S.entries=Array.isArray(d.entries)?d.entries:[];}catch(e){}}const p=await _get(SKEY+"-pin");if(p)_PIN=p;S.entries.forEach(e=>{if(!e.payStatus)e.payStatus='unpaid';if(!e.payMethod)e.payMethod='';});try{S.playerEmail=localStorage.getItem('best4-player-email')||null;}catch(e){}S.loaded=true;R();startAutoRefresh();}
 function startAutoRefresh(){
   setInterval(async()=>{
     try{
@@ -1599,7 +1599,7 @@ const TOURNAMENTS={
   masters:{label:'Masters Tournament',name:'Masters Tournament',course:'Augusta National Golf Club',par:72,theme:'masters'},
   players:{label:'THE PLAYERS Championship',name:'THE PLAYERS Championship',course:'TPC Sawgrass (Stadium Course)',par:72,theme:'default'},
   valspar:{label:'Valspar Championship',name:'Valspar Championship',course:'Innisbrook Resort (Copperhead Course)',par:71,theme:'default'},
-  usopen:{label:'U.S. Open',name:'U.S. Open',course:'Oakmont Country Club',par:70,theme:'usopen'},
+  usopen:{label:'U.S. Open',name:'U.S. Open',course:'Shinnecock Hills Golf Club',par:70,theme:'usopen'},
   pga:{label:'PGA Championship',name:'PGA Championship',course:'Quail Hollow Club',par:71,theme:'default'},
   open:{label:'The Open Championship',name:'The Open Championship',course:'Royal Portrush Golf Club',par:71,theme:'default'},
   arnold_palmer:{label:'Arnold Palmer Invitational',name:'Arnold Palmer Invitational',course:'Bay Hill Club & Lodge',par:72,theme:'default'},
@@ -1675,6 +1675,34 @@ function rArchive(){
   }
 
   frag.append(card);
+
+  // Wipe without archive — destructive, for starting a brand-new tournament when prior results are not needed
+  const wipeCard=$('div',{className:'card',style:{borderColor:'#CC0000',borderWidth:'2px',background:'#FFF5F5'}});
+  wipeCard.append($('h2',{className:'hd',style:{color:'#CC0000'}},'Wipe without archive'));
+  wipeCard.append($('p',{className:'sub',style:{margin:'4px 0 16px'}},'Destructive. Permanently deletes all entries, golfers, scores, and winner data without saving an archive. Config (fees, splits, handles, commissioner info) stays intact. Use when starting a brand-new tournament you do not need to keep results for.'));
+  if(S.entries.length>0 || S.golfers.length>0){
+    const wipeBtn=$('button',{className:'btn',style:{background:'#CC0000',color:'#fff',fontSize:'16px',padding:'12px 24px',border:'none',borderRadius:'8px',cursor:'pointer'},onClick:async ()=>{
+      const typed=prompt('PERMANENTLY DELETE all entries, golfers, and scores?\n\nCurrent: '+S.entries.length+' entries, '+S.golfers.length+' golfers.\n\nThis cannot be undone. No archive will be saved.\n\nType DELETE to confirm:');
+      if(typed!=='DELETE')return;
+      S.golfers=[];S.entries=[];
+      S.config.name='';S.config.course='';S.config.tournament='custom';
+      S.config.winnerGolfer='';S.config.winnerScore=null;
+      S.config.publishedRounds=[false,false,false,false];S.config.locked=false;
+      const payload={_reset:true,config:S.config,golfers:[],entries:[]};
+      try{
+        const r=await fetch('/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(!r.ok){alert('Server reset failed: HTTP '+r.status);return;}
+      }catch(e){alert('Server reset failed: '+e.message);return;}
+      try{localStorage.setItem(SKEY,JSON.stringify({config:S.config,golfers:[],entries:[]}));}catch(e){}
+      S.successMsg='Wiped. Go to Setup to configure the new tournament.';S.view='setup';R();
+    }});
+    wipeBtn.textContent='Wipe all data (no archive)';
+    wipeCard.append(wipeBtn);
+    wipeCard.append($('p',{className:'sub',style:{marginTop:'8px',color:'#CC0000'}},'Will permanently delete: '+S.entries.length+' entries, '+S.golfers.length+' golfers.'));
+  } else {
+    wipeCard.append($('p',{className:'sub'},'No data to wipe.'));
+  }
+  frag.append(wipeCard);
 
   // Past archives
   const listCard=$('div',{className:'card',id:'archive-list'});

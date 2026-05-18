@@ -51,6 +51,20 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const incoming = req.body;
 
+      // Explicit reset: bypass merge + empty-POST guard, clear notify counter and live leaderboard.
+      // Use only when starting a brand-new tournament with no need to retain prior entries.
+      if (incoming._reset === true) {
+        const cleanState = {
+          config: incoming.config || {},
+          golfers: Array.isArray(incoming.golfers) ? incoming.golfers : [],
+          entries: Array.isArray(incoming.entries) ? incoming.entries : []
+        };
+        await kv.set(KEY, cleanState);
+        await kv.set(NOTIFY_KEY, cleanState.entries.length);
+        await kv.set('pool:live-leaderboard', []);
+        return res.status(200).json({ ok: true, reset: true, entryCount: cleanState.entries.length });
+      }
+
       // Read current server state for merge
       let existing = null;
       try { existing = await kv.get(KEY); } catch (e) {}
