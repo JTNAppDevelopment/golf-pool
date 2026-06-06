@@ -369,7 +369,7 @@ function rSetup(){
 function rGolfers(){
   const card=$('div',{className:'card'});const hdr=$('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}});
   hdr.append($('h2',{className:'hd'},'Golfer field ('+S.golfers.length+')'));
-  if(S.golfers.length>0&&S.golfers.every(g=>g.scores.every(s=>s==null||s===''))){hdr.append($('p',{style:{fontSize:'12px',color:'var(--med)',marginTop:'4px'}},'Pre-loaded: 2026 Masters field. Scores are empty — safe to open entries.'));}
+  if(S.golfers.length>0&&S.golfers.every(g=>g.scores.every(s=>s==null||s===''))){hdr.append($('p',{style:{fontSize:'12px',color:'var(--med)',marginTop:'4px'}},'Field loaded ('+(S.config.name||'tournament')+'). Scores are empty — safe to open entries.'));}
   const bd=$('div',{style:{display:'none',marginTop:'12px',padding:'16px',background:'var(--gray)',borderRadius:'8px'}});
   const hdrBtns=$('div',{style:{display:'flex',gap:'8px'}});
   hdrBtns.append($('button',{className:'btn btn-g',style:{fontSize:'12px'},onClick:espnImportField},'\u26f3 Import from ESPN'));
