@@ -21,8 +21,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: false, reason: 'Auto-sync is disabled' });
     }
 
-    // 2. Fetch ESPN leaderboard
-    const espnRes = await fetch(ESPN_URL, {
+    // 2. Fetch ESPN leaderboard, pinned to configured event when set
+    const eventId = state.config && state.config.espnEvent;
+    const url = eventId ? `${ESPN_URL}?event=${encodeURIComponent(eventId)}` : ESPN_URL;
+    const espnRes = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; best4golf/1.0)' }
     });
     const espnData = await espnRes.json();

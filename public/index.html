@@ -270,6 +270,7 @@ function rSetup(){
     if(t&&tournSel.value!=='custom'){
       S.config.tournament=tournSel.value;
       S.config.name=t.name;S.config.course=t.course;S.config.par=t.par;S.config.theme=t.theme;
+      S.config.espnEvent=t.espnEvent||'';
     } else {
       S.config.tournament='custom';
     }
@@ -1043,8 +1044,9 @@ async function espnSync(){
   S.syncStatus='loading';S.syncError='';R();
   try{
     let data;
-    const proxyUrl='/api/espn';
-    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard';
+    const ev=S.config.espnEvent?'?event='+encodeURIComponent(S.config.espnEvent):'';
+    const proxyUrl='/api/espn'+ev;
+    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard'+ev;
     try{const r=await fetch(proxyUrl);data=await r.json();}
     catch(e){const r=await fetch(directUrl);data=await r.json();}
 
@@ -1089,11 +1091,15 @@ async function espnImportField(){
   S.syncStatus='loading';S.syncError='';R();
   try{
     let data;
-    const proxyUrl='/api/espn';
-    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard';
+    const ev=S.config.espnEvent?'?event='+encodeURIComponent(S.config.espnEvent):'';
+    const proxyUrl='/api/espn'+ev;
+    const directUrl='https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard'+ev;
     try{const r=await fetch(proxyUrl);data=await r.json();}
     catch(e){try{const r2=await fetch(directUrl);data=await r2.json();}catch(e2){}}
-    if(!data||!data.events||!data.events.length){S.syncStatus=null;alert('No active tournament found on ESPN.');R();return;}
+    if(!data||!data.events||!data.events.length){S.syncStatus=null;alert('No tournament data found on ESPN'+(S.config.espnEvent?' for event '+S.config.espnEvent:'')+'.');R();return;}
+    const evtPeek=data.events[0];
+    const competitorsPeek=(evtPeek.competitions&&evtPeek.competitions[0]&&evtPeek.competitions[0].competitors)||[];
+    if(!competitorsPeek.length){S.syncStatus=null;alert('ESPN has '+evtPeek.name+' scheduled but no field/competitors are published yet. Try again closer to the start date.');R();return;}
     const evt=data.events[0];
     const comp=evt.competitions&&evt.competitions[0];
     if(!comp||!comp.competitors){S.syncStatus=null;alert('No competitor data found.');R();return;}
@@ -1599,7 +1605,7 @@ const TOURNAMENTS={
   masters:{label:'Masters Tournament',name:'Masters Tournament',course:'Augusta National Golf Club',par:72,theme:'masters'},
   players:{label:'THE PLAYERS Championship',name:'THE PLAYERS Championship',course:'TPC Sawgrass (Stadium Course)',par:72,theme:'default'},
   valspar:{label:'Valspar Championship',name:'Valspar Championship',course:'Innisbrook Resort (Copperhead Course)',par:71,theme:'default'},
-  usopen:{label:'U.S. Open',name:'U.S. Open',course:'Shinnecock Hills Golf Club',par:70,theme:'usopen'},
+  usopen:{label:'U.S. Open',name:'U.S. Open',course:'Shinnecock Hills Golf Club',par:70,theme:'usopen',espnEvent:'401811952'},
   pga:{label:'PGA Championship',name:'PGA Championship',course:'Quail Hollow Club',par:71,theme:'default'},
   open:{label:'The Open Championship',name:'The Open Championship',course:'Royal Portrush Golf Club',par:71,theme:'default'},
   arnold_palmer:{label:'Arnold Palmer Invitational',name:'Arnold Palmer Invitational',course:'Bay Hill Club & Lodge',par:72,theme:'default'},
