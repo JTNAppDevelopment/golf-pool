@@ -1057,30 +1057,56 @@ async function espnSync(){
     if(!comp||!comp.competitors){S.syncStatus='error';S.syncError='No competitor data';R();return;}
 
     S.syncTournament=evt.name||'Unknown';
-    S.syncData=[];
+
+    // Mirror auto-sync.js: normalize Nordic/accented characters; store final-round
+    // values only (skip in-progress and not-started rounds); build a lookup map
+    // keyed by displayName, lastName, accent-stripped variants, and "I. Last" form.
+    const norm=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/Ø/g,'O').replace(/æ/g,'ae').replace(/Æ/g,'Ae').replace(/ß/g,'ss');
+    const espnMap={};
     comp.competitors.forEach(c=>{
-      const name=c.athlete&&c.athlete.displayName?c.athlete.displayName:'';
-      const lastName=name.split(' ').slice(-1)[0];
-      const status=c.status&&c.status.type?c.status.type.name:'';
-      const isCut=status==='cut'||status==='CUT';
-      const rounds=[];
-      if(c.linescores){c.linescores.forEach((ls,i)=>{rounds[i]=ls.value!=null?ls.value:null;});}
-      const total=rounds.reduce((s,v)=>s+(v||0),0);
-      S.syncData.push({fullName:name,lastName,rounds,total,isCut,status});
+      const athlete=c.athlete||{};
+      const name=athlete.displayName||athlete.shortName||'';
+      const lastName=athlete.lastName||name.split(' ').pop()||'';
+      const firstName=(athlete.displayName||'').split(' ')[0]||'';
+      const status=c.status||{};
+      const currentPeriod=status.period||1;
+      const isCompleted=status.type&&status.type.completed;
+      const thru=status.thru||0;
+      const rounds=(c.linescores||[]).map((ls,ri)=>{
+        if(ls.value==null||ls.value===0)return null;
+        const roundNum=ri+1;
+        if(roundNum<currentPeriod)return ls.value;
+        if(roundNum===currentPeriod&&(thru>=18||isCompleted))return ls.value;
+        return null;
+      });
+      while(rounds.length<4)rounds.push(null);
+      const isCut=status.type&&(status.type.id==='3'||status.type.description==='Cut');
+      const entry={fullName:name,lastName,rounds,isCut};
+      espnMap[lastName]=entry;
+      espnMap[name]=entry;
+      espnMap[norm(lastName)]=entry;
+      espnMap[norm(name)]=entry;
+      if(firstName){
+        const initial=firstName[0];
+        espnMap[initial+'. '+lastName]=entry;
+        espnMap[initial+'. '+norm(lastName)]=entry;
+      }
+      espnMap[norm(lastName).toLowerCase()]=entry;
     });
 
-    // Try to match with existing golfers
+    // Walk LOCAL golfers, look up ESPN entry by exact/normalized key, compute diff.
+    // Detect null-clearing transitions too so bogus mid-round values get wiped.
     S.syncMatches=[];
-    S.syncData.forEach(sd=>{
-      const match=S.golfers.find(g=>g.name.toLowerCase()===sd.lastName.toLowerCase())||
-                  S.golfers.find(g=>sd.fullName.toLowerCase().includes(g.name.toLowerCase()))||
-                  S.golfers.find(g=>g.name.toLowerCase().includes(sd.lastName.toLowerCase()));
-      if(match){
-        const changes=[];
-        [0,1,2,3].forEach(r=>{if(sd.rounds[r]!=null&&sd.rounds[r]!==match.scores[r])changes.push('R'+(r+1)+': '+(match.scores[r]||'—')+' → '+sd.rounds[r]);});
-        if(sd.isCut&&match.cutStatus!=='MC')changes.push('Cut: → MC');
-        if(changes.length)S.syncMatches.push({espn:sd,local:match,changes,localIdx:S.golfers.indexOf(match)});
-      }
+    S.golfers.forEach((g,localIdx)=>{
+      const sd=espnMap[g.name]||espnMap[norm(g.name)]||espnMap[norm(g.name).toLowerCase()];
+      if(!sd)return;
+      const changes=[];
+      [0,1,2,3].forEach(r=>{
+        const espnVal=sd.rounds[r];
+        if(espnVal!==g.scores[r])changes.push('R'+(r+1)+': '+(g.scores[r]==null?'—':g.scores[r])+' → '+(espnVal==null?'—':espnVal));
+      });
+      if(sd.isCut&&g.cutStatus!=='MC')changes.push('Cut: → MC');
+      if(changes.length)S.syncMatches.push({espn:sd,local:g,changes,localIdx});
     });
 
     S.syncStatus='preview';R();
@@ -1120,7 +1146,10 @@ async function espnImportField(){
 
 function applySyncData(){
   S.syncMatches.forEach(m=>{
-    [0,1,2,3].forEach(r=>{if(m.espn.rounds[r]!=null)S.golfers[m.localIdx].scores[r]=m.espn.rounds[r];});
+    [0,1,2,3].forEach(r=>{
+      const v=m.espn.rounds[r];
+      S.golfers[m.localIdx].scores[r]=(v==null?null:v);
+    });
     if(m.espn.isCut)S.golfers[m.localIdx].cutStatus='MC';
     else if(S.golfers[m.localIdx].cutStatus!=='MC'&&m.espn.rounds.filter(r=>r!=null).length>=2)S.golfers[m.localIdx].cutStatus='MADE';
   });
