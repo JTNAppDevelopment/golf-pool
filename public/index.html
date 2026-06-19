@@ -769,8 +769,12 @@ function rLeaderboard(){
     frag.append(card);return frag;
   }
   const w=$('div',{className:'overflow-x'}),tbl=$('table');
-  const hds=['#','Participant','vs Par','Cuts','Dropped'];if(isA)hds.push('TB','Winnings');
-  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1||i===4?'left':''},t)))));
+  const hds=['#','Participant','vs Par','Cuts'];if(isA)hds.push('TB','Winnings');
+  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1?'left':''},t)))));
+  // For live mode, the historical-strokes fallback divisor is the count of
+  // active rounds (rounds with any data anywhere in the field).
+  const liveActiveCount=through?through:[0,1,2,3].filter(r=>S.golfers.some(g=>g.scores[r]!=null&&g.scores[r]!==''&&g.scores[r]!==0)).length;
+  const fmtVp=v=>v>0?'+'+v:v===0?'E':String(v);
   const tb=$('tbody');display.forEach(e=>{
     const isMe=!isA&&S.playerEmail&&e.email&&e.email.toLowerCase()===S.playerEmail.toLowerCase();
     const bg2=e.eliminated?'var(--lt-red)':(isMe?'#FFF8E1':(e.rank&&e.rank<=3?'var(--lt-green)':'transparent'));
@@ -780,11 +784,25 @@ function rLeaderboard(){
     const nameRow=$('div',{style:{fontWeight:'600',display:'flex',alignItems:'center',gap:'6px'}});
     nameRow.append(document.createTextNode(e.participant));
     if(isMe)nameRow.append($('span',{className:'badge',style:{background:'var(--gold)',color:'var(--dk-green)',fontSize:'9px'}},'YOU'));
-    nt.append(nameRow,$('div',{style:{fontSize:'11px',color:'var(--med)'}},e.picks.join(' · ')));row.append(nt);
-    const vs=e.vsPar!=null?(e.vsPar>0?'+'+e.vsPar:e.vsPar===0?'E':String(e.vsPar)):'';
+    // Picks line: each pick gets its vs-par in parens; the dropped pick is strike-through.
+    // vs-par source mirrors the main vs-par column: live ESPN in Live mode, strokes vs par in historical mode.
+    const picksLine=$('div',{style:{fontSize:'11px',color:'var(--med)'}});
+    (e.playerData||[]).forEach((pd,pi)=>{
+      let vpNum=null,vpStr='';
+      if(pd.isMC){vpStr='(MC)';}
+      else if(through){if(pd.total>0){vpNum=pd.total-S.config.par*through;vpStr='('+fmtVp(vpNum)+')';}}
+      else{if(pd.vsPar!=null){vpNum=pd.vsPar;vpStr='('+fmtVp(vpNum)+')';}
+        else if(pd.total>0&&liveActiveCount>0){vpNum=pd.total-S.config.par*liveActiveCount;vpStr='('+fmtVp(vpNum)+')';}}
+      const isDropped=pd.name===e.droppedPlayer;
+      const isUnder=vpNum!=null&&vpNum<0;
+      const span=$('span',{style:{textDecoration:isDropped?'line-through':'none',opacity:isDropped?'0.6':'1',color:pd.isMC?'var(--red)':(isUnder?'var(--red)':'var(--med)')}},pd.name+(vpStr?' '+vpStr:''));
+      picksLine.appendChild(span);
+      if(pi<(e.playerData||[]).length-1)picksLine.appendChild(document.createTextNode(' · '));
+    });
+    nt.append(nameRow,picksLine);row.append(nt);
+    const vs=e.vsPar!=null?fmtVp(e.vsPar):'';
     row.append($('td',{style:{color:(e.vsPar||0)<0?'var(--red)':'var(--dk)',fontWeight:'700',fontSize:'15px'}},e.eliminated?'ELIM':vs));
     const ct=$('td');if(e.mcCount>0)ct.append($('span',{className:'badge '+(e.mcCount>=2?'bg-lr':'bg-warn')},e.mcCount+' MC'));else ct.textContent='0';row.append(ct);
-    row.append($('td',{className:'left',style:{fontSize:'12px'}},e.droppedPlayer||(e.eliminated?'N/A':'\u2014')));
     if(isA){row.append($('td',null,e.tbPred!=null?String(e.tbPred):'—'));row.append($('td',{style:{fontWeight:'700',color:e.winnings>0?'var(--green)':'inherit'}},e.winnings>0?'$'+Math.round(e.winnings).toLocaleString():''));}
     tb.append(row);});tbl.append(tb);w.append(tbl);card.append(w);
   frag.append(card);return frag;
