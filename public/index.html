@@ -755,30 +755,19 @@ function rLeaderboard(){
     bg.append($('span',{className:'badge',style:{background:hd&&show?'var(--lt-green)':'var(--gray)',color:hd&&show?'var(--green)':'var(--med)'}},l+(pub?' ✓':'')));});
   hdr.append(bg);card.append(hdr);
   const act=display.filter(e=>!e.eliminated).length,eli=display.filter(e=>e.eliminated).length;
-  const pp=through?calcPerfectPick(undefined,[0,1,2,3].slice(0,through),through===1):calcPerfectPick();
   if(isA){
-    const m=$('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'12px',margin:'16px 0'}});
-    [{l:'Entries',v:S.entries.length},{l:'Active',v:act,c:'var(--green)'},{l:'Eliminated',v:eli,c:'var(--red)'},{l:'Pool',v:'$'+tp.toLocaleString()},{l:'Perfect Pick',v:pp.score||'\u2014',c:'var(--dk-green)'}].forEach(x=>{
+    const m=$('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px',margin:'16px 0'}});
+    [{l:'Entries',v:S.entries.length},{l:'Active',v:act,c:'var(--green)'},{l:'Eliminated',v:eli,c:'var(--red)'},{l:'Pool',v:'$'+tp.toLocaleString()}].forEach(x=>{
       m.append($('div',{className:'metric'},$('div',{className:'lbl2'},x.l),$('div',{className:'val',style:x.c?{color:x.c}:{}},String(x.v))));});
-    if(pp.names.length){
-      const ppSub=$('div',{style:{fontSize:'11px',color:'var(--med)',textAlign:'center',marginTop:'-8px',marginBottom:'8px'}});
-      ppSub.textContent='Perfect Pick = the 4 lowest-scoring golfers in the field: '+pp.names.join(' \u00b7 ')+'. The +PP column shows how many strokes each entry is off this pace.';
-      card.append(m);card.append(ppSub);
-    } else card.append(m);
+    card.append(m);
   }
   if(!display.length){
     card.append($('p',{className:'sub',style:{textAlign:'center',padding:'20px'}},'No standings yet.'));
-    const foot0=$('div',{style:{marginTop:'16px',padding:'14px 18px',background:'var(--gray)',borderRadius:'8px',fontSize:'13px',lineHeight:'1.6',color:'var(--dk)'}});
-    foot0.innerHTML='<strong style="color:var(--green);">What is +PP (Perfect Pick)?</strong><br>'
-      +'The Perfect Pick is the best possible entry anyone could have made \u2014 the 4 lowest-scoring golfers in the entire field. '
-      +'Once scores are entered, the +PP column will show how many strokes each entry is behind that theoretical best. '
-      +'<strong>Lower is better.</strong> A +0 would mean you picked perfectly.';
-    card.append(foot0);
     frag.append(card);return frag;
   }
   const w=$('div',{className:'overflow-x'}),tbl=$('table');
-  const hds=['#','Participant','vs Par','+PP','Cuts','Dropped'];if(isA)hds.push('TB','Winnings');
-  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1||i===5?'left':''},t)))));
+  const hds=['#','Participant','vs Par','Cuts','Dropped'];if(isA)hds.push('TB','Winnings');
+  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1||i===4?'left':''},t)))));
   const tb=$('tbody');display.forEach(e=>{
     const isMe=!isA&&S.playerEmail&&e.email&&e.email.toLowerCase()===S.playerEmail.toLowerCase();
     const bg2=e.eliminated?'var(--lt-red)':(isMe?'#FFF8E1':(e.rank&&e.rank<=3?'var(--lt-green)':'transparent'));
@@ -791,26 +780,10 @@ function rLeaderboard(){
     nt.append(nameRow,$('div',{style:{fontSize:'11px',color:'var(--med)'}},e.picks.join(' · ')));row.append(nt);
     const vs=e.vsPar!=null?(e.vsPar>0?'+'+e.vsPar:e.vsPar===0?'E':String(e.vsPar)):'';
     row.append($('td',{style:{color:(e.vsPar||0)<0?'var(--red)':'var(--dk)',fontWeight:'700',fontSize:'15px'}},e.eliminated?'ELIM':vs));
-    const ppDiff=(!e.eliminated&&e.best4!=null&&pp.score>0)?e.best4-pp.score:null;
-    row.append($('td',{style:{fontSize:'12px',fontWeight:'600',color:ppDiff!=null?(ppDiff<=5?'var(--green)':ppDiff<=15?'var(--dk)':'var(--red)'):'var(--med)'}},ppDiff!=null?(ppDiff>=0?'+'+ppDiff:String(ppDiff)):'\u2014'));
     const ct=$('td');if(e.mcCount>0)ct.append($('span',{className:'badge '+(e.mcCount>=2?'bg-lr':'bg-warn')},e.mcCount+' MC'));else ct.textContent='0';row.append(ct);
     row.append($('td',{className:'left',style:{fontSize:'12px'}},e.droppedPlayer||(e.eliminated?'N/A':'\u2014')));
     if(isA){row.append($('td',null,e.tbPred!=null?String(e.tbPred):'—'));row.append($('td',{style:{fontWeight:'700',color:e.winnings>0?'var(--green)':'inherit'}},e.winnings>0?'$'+Math.round(e.winnings).toLocaleString():''));}
     tb.append(row);});tbl.append(tb);w.append(tbl);card.append(w);
-  const foot=$('div',{style:{marginTop:'16px',padding:'14px 18px',background:'var(--gray)',borderRadius:'8px',fontSize:'13px',lineHeight:'1.6',color:'var(--dk)'}});
-  if(pp.score>0){
-    foot.innerHTML='<strong style="color:var(--green);">What is +PP (Perfect Pick)?</strong><br>'
-      +'The Perfect Pick is the best possible entry anyone could have made \u2014 the 4 lowest-scoring golfers in the entire field, totaling <strong>'+pp.score+' strokes</strong>: '
-      +pp.names.join(', ')+'. '
-      +'The +PP number next to your score shows how many strokes your entry is behind that theoretical best. '
-      +'<strong>Lower is better.</strong> A +0 would mean you picked perfectly.';
-  } else {
-    foot.innerHTML='<strong style="color:var(--green);">What is +PP (Perfect Pick)?</strong><br>'
-      +'The Perfect Pick is the best possible entry anyone could have made \u2014 the 4 lowest-scoring golfers in the entire field. '
-      +'Once scores are entered, the +PP column will show how many strokes each entry is behind that theoretical best. '
-      +'<strong>Lower is better.</strong> A +0 would mean you picked perfectly.';
-  }
-  card.append(foot);
   frag.append(card);return frag;
 }
 
@@ -945,16 +918,13 @@ function rScores(){
     const t10Card=$('div',{className:'card'});
     t10Card.append($('h2',{className:'hd',style:{fontSize:'18px'}},'Top 10 entries'));
     const t10tbl=$('table');
-    t10tbl.append($('thead',null,$('tr',null,$('th',null,'#'),$('th',{className:'left'},'Participant'),$('th',null,'vs Par'),$('th',null,'+PP'),$('th',null,'Cuts'))));
+    t10tbl.append($('thead',null,$('tr',null,$('th',null,'#'),$('th',{className:'left'},'Participant'),$('th',null,'vs Par'),$('th',null,'Cuts'))));
     const t10tb=$('tbody');
-    const pp=calcPerfectPick();
     sc.scored.filter(e=>e.rank!=null&&e.rank<=10).forEach(e=>{
       const row=$('tr',{style:{background:e.rank<=3?'var(--lt-green)':'transparent'}});
       row.append($('td',{style:{fontWeight:'700'}},String(e.rank)));
       row.append($('td',{className:'left',style:{fontWeight:'600'}},e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')));
       row.append($('td',{style:{color:e.vsPar<0?'var(--red)':'var(--dk)',fontWeight:'700'}},e.vsPar!=null?(e.vsPar>=0?'+':'')+e.vsPar:'--'));
-      const ppDiff=e.best4!=null&&pp.score>0?e.best4-pp.score:null;
-      row.append($('td',null,ppDiff!=null?'+'+ppDiff:'--'));
       row.append($('td',{style:{color:e.mcCount?'var(--red)':'var(--med)'}},e.mcCount?e.mcCount+' MC':'0'));
       t10tb.append(row);
     });
@@ -1237,7 +1207,6 @@ function getRulesHTML(){
         '5. Predict the winner\x27s final score vs. par (tiebreaker: closest without going over)<br>'+
         '6. <strong>Tip the bar staff:</strong> When you enter, pledge a % of your winnings to the Grill Bar staff &mdash; collected at payout'+
       '<br><br><strong>Entries are hidden</strong> until play commences on Thursday morning. Once the tournament begins, all picks will be revealed.'+
-      '<br><br><strong>Perfect Pick (+PP):</strong> The theoretical best score &mdash; the 4 lowest-scoring golfers in the field. Your +PP number shows how many strokes you are off that pace.'+
       '</div>'+
     '</div>'+
     '<div style="margin:10px 0;padding:10px 16px;background:#FFF8E1;border-radius:8px;border-left:4px solid #D4A017;font-size:14px;color:#333;text-align:left;">'+
@@ -1351,7 +1320,7 @@ function rAnnounce(){
     {label:'Round complete',subj:'Scores updated',body:'Round scores have been updated. Check the leaderboard to see where you stand!'},
     {label:'Cut day',subj:'The cut has been made',body:'The cut has been made. Check your entries to see if you survived!'},
     {label:'Final results',subj:'Final results are in!',body:(function(){
-      const sc2=scoring();const pp2=calcPerfectPick();
+      const sc2=scoring();
       let txt='The tournament is over! Final results:\n\n';
       const winners=sc2.scored.filter(e=>e.winnings>0).sort((a,b)=>a.rank-b.rank);
       winners.forEach(e=>{
@@ -1578,7 +1547,7 @@ function buildWhatIfLeaderboard(){
 
   const div=$('div',{className:'overflow-x',style:{marginTop:'12px'}});
   const tbl=$('table');
-  tbl.append($('thead',null,$('tr',null,...['#','','Participant','Score','vs Par','+PP','Cuts','Dropped'].map((t,i)=>$('th',{className:i===2||i===6?'left':''},t)))));
+  tbl.append($('thead',null,$('tr',null,...['#','','Participant','Score','vs Par','Cuts','Dropped'].map((t,i)=>$('th',{className:i===2||i===5?'left':''},t)))));
 
   const tbody=$('tbody');
   const isA=S.isAdmin;
@@ -1610,14 +1579,6 @@ function buildWhatIfLeaderboard(){
     row.append($('td',{style:{fontWeight:'700',fontSize:'15px'}},e.eliminated?'ELIM':(e.best4!=null?String(e.best4):'—')));
     const vs=e.vsPar!=null?(e.vsPar>0?'+'+e.vsPar:e.vsPar===0?'E':String(e.vsPar)):'';
     row.append($('td',{style:{color:(e.vsPar||0)<0?'var(--red)':'var(--dk)',fontWeight:'600'}},vs));
-    const wifGolfers=S.golfers.map(g=>{
-      const ws=S._wif&&S._wif[g.name]?S._wif[g.name]:g.scores;
-      const wc=S._wifCuts&&S._wifCuts[g.name]?S._wifCuts[g.name]:g.cutStatus;
-      return{name:g.name,scores:ws,cutStatus:wc};
-    });
-    const wpp=calcPerfectPick(wifGolfers);
-    const wppDiff=(!e.eliminated&&e.best4!=null&&wpp.score>0)?e.best4-wpp.score:null;
-    row.append($('td',{style:{fontSize:'12px',color:wppDiff!=null?(wppDiff<=5?'var(--green)':wppDiff<=15?'var(--dk)':'var(--red)'):'var(--med)'}},wppDiff!=null?'+'+wppDiff:'—'));
     const ct=$('td');
     if(e.mcCount>0)ct.append($('span',{className:'badge '+(e.mcCount>=2?'bg-lr':'bg-warn')},e.mcCount+' MC'));
     else ct.textContent='0';
@@ -1637,19 +1598,6 @@ function updateWhatIfLeaderboard(){
 }
 
 
-function calcPerfectPick(golferSource,pubRounds,skipCuts){
-  const gs=golferSource||S.golfers;
-  const pr=pubRounds||[0,1,2,3].filter(r=>S.config.publishedRounds&&S.config.publishedRounds[r]);
-  if(!pr.length)return{score:0,names:[]};
-  const made=skipCuts?gs:gs.filter(g=>g.cutStatus!=='MC');
-  const totals=made.map(g=>{
-    let t=0;pr.forEach(r=>{t+=(g.scores[r]||0);});
-    return{name:g.name,total:t};
-  }).filter(t=>t.total>0);
-  totals.sort((a,b)=>a.total-b.total);
-  const best4=totals.slice(0,4);
-  return{score:best4.reduce((s,g)=>s+g.total,0),names:best4.map(g=>g.name)};
-}
 
 
 const THEMES={
