@@ -183,7 +183,17 @@ function scoring(throughRound){
   const sc=S.entries.map(e=>{
     const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,vsPar:0,isMC:false};const t=activeRounds.reduce((s,r)=>s+(g.scores[r]||0),0);const lp=liveParMap[pn]!=null?liveParMap[pn]:null;return{name:pn,total:t,vsPar:lp,isMC:applyCuts&&g.cutStatus==="MC"};});
     const mc=pd.filter(p=>p.isMC).length,elim=mc>=2;let b4=null,drop=null,b4vp=null;
-    if(!elim){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
+    // "drop score": higher = worse. Live mode prefers ESPN vsPar (fair when picks are at
+    // different stages of the round); falls back to strokes-vs-par when ESPN has no data.
+    // Without this, a golfer who has played MORE rounds had a higher raw-stroke total and
+    // would be incorrectly dropped over a worse-performing pick who'd played fewer rounds.
+    const dropScore=p=>{
+      if(isHist)return p.total-S.config.par*throughRound;
+      if(p.vsPar!=null)return p.vsPar;
+      if(p.total>0)return p.total-S.config.par*activeRounds.length;
+      return 9999;
+    };
+    if(!elim){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>dropScore(b)-dropScore(a));drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
     const vp=b4vp!=null?b4vp:(b4!=null?b4-S.config.par*4*rp:null);
     const tbp=e.tbPrediction!=null&&e.tbPrediction!==""?Number(e.tbPrediction):null;
     const tbv=tbp!=null&&wvp!=null&&tbp>=wvp,tbd=tbp!=null&&wvp!=null?Math.abs(wvp-tbp):9999,comp=vp!=null?(vp+500)*1000000+(tbv?0:500000)+tbd:9999999999;
@@ -216,7 +226,14 @@ function playerView(throughRound){
   const sc=S.entries.map(e=>{
     const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,vsPar:0,isMC:false};const t=g.scores.reduce((s,v,ri)=>s+(vis.includes(ri)?(v||0):0),0);const lp=liveParMap[pn]!=null?liveParMap[pn]:null;return{name:pn,total:t,vsPar:lp,isMC:applyCuts&&g.cutStatus==="MC"&&maxR>=1};});
     const mc=pd.filter(p=>p.isMC).length,elim=mc>=2;let b4=null,drop=null,b4vp=null;
-    if(!elim&&pd.some(p=>p.total>0)){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
+    // Drop selection: prefer live vsPar so picks at different stages of the round compare fairly.
+    const dropScore=p=>{
+      if(isHist)return p.total-S.config.par*throughRound;
+      if(p.vsPar!=null)return p.vsPar;
+      if(p.total>0)return p.total-S.config.par*vis.length;
+      return 9999;
+    };
+    if(!elim&&pd.some(p=>p.total>0)){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>dropScore(b)-dropScore(a));drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
     const vp=b4vp!=null?b4vp:(b4!=null?b4-S.config.par*vis.length*4:null);
     return{...e,playerData:pd,mcCount:mc,eliminated:elim,best4:b4,droppedPlayer:drop,vsPar:vp};
   }).filter(e=>e.vsPar!=null).sort((a,b)=>(a.vsPar!=null?a.vsPar:9999)-(b.vsPar!=null?b.vsPar:9999));
