@@ -94,11 +94,9 @@ export default async function handler(req, res) {
       }
     });
 
-    if (updates === 0) {
-      return res.status(200).json({ ok: true, updates: 0, reason: 'No score changes' });
-    }
-
-    // 5. Save live leaderboard data for player-facing display
+    // 5. Build live leaderboard. ALWAYS write it — scoreToPar/thru/today change every
+    //    few minutes for any in-progress golfer even when no full round has finished.
+    //    Skipping this write on "no stored stroke changes" was the source of ~45-min lag.
     const liveBoard = comp.competitors.map(c => {
       const a = c.athlete || {};
       const lastName = a.lastName || (a.displayName || '').split(' ').pop() || '';
@@ -120,8 +118,10 @@ export default async function handler(req, res) {
     });
     await kv.set('pool:live-leaderboard', liveBoard);
 
-    // 6. Save updated state
-    await kv.set(KEY, state);
+    // 6. Save updated state only when stored stroke totals actually changed.
+    if (updates > 0) {
+      await kv.set(KEY, state);
+    }
 
     return res.status(200).json({
       ok: true,
