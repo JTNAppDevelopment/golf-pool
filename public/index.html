@@ -667,7 +667,7 @@ function rEntryList(isA){
       } else methTd.textContent='—';
       row.append(methTd);
       const actTd=$('td');
-      const editBtn=$('button',{className:'link-btn',style:{color:'var(--green)',padding:'8px 12px',fontWeight:'600'},onClick:()=>{S.editIdx=i;S.successMsg="";R();}},'Edit');
+      const editBtn=$('button',{className:'link-btn',style:{color:'var(--green)',padding:'8px 12px',fontWeight:'600'},onClick:()=>{S.editIdx=i;S.successMsg="";R();window.scrollTo({top:0,behavior:'smooth'});}},'Edit');
       const sep=$('span',{style:{color:'var(--med)',padding:'0 8px',userSelect:'none'}},'|');
       const delBtn=$('button',{className:'link-btn',style:{color:'var(--red)',padding:'8px 12px'},onClick:()=>{if(confirm('Delete '+e.participant+'?')){_deletedIds.add(e.id);S.entries.splice(i,1);save();R();}}},'Del');
       actTd.append(editBtn,sep,delBtn);
@@ -677,7 +677,7 @@ function rEntryList(isA){
       const myEntry=S.playerEmail&&e.email&&e.email.toLowerCase()===S.playerEmail.toLowerCase();
       if(myEntry){
         const vTd=$('td');
-        vTd.append($('button',{className:'link-btn',style:{color:'var(--green)'},onClick:()=>{S.editIdx=i;S.successMsg='';R();}},locked?'View':'Edit'));
+        vTd.append($('button',{className:'link-btn',style:{color:'var(--green)'},onClick:()=>{S.editIdx=i;S.successMsg='';R();window.scrollTo({top:0,behavior:'smooth'});}},locked?'View':'Edit'));
         row.append(vTd);
       }
     }
