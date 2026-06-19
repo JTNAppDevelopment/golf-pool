@@ -84,7 +84,7 @@ td.left { text-align: left; }
 const SKEY="golf-pool-v1";
 const DEF={name:"2025 Masters",course:"Augusta National Golf Club",par:72,numPicks:5,mainFee:100,pickFee:15,splits:[50,30,20],locked:false,deadline:"",winnerGolfer:"",winnerScore:null,publishedRounds:[false,false,false,false],appUrl:"",commEmail:"",venmoHandle:"",zelleHandle:"",acceptCash:true,commissionerName:""};
 const MASTERS_2026_FIELD=["Aberg", "Berger", "Bhatia", "Bradley", "Brennan", "Bridgeman", "Burns", "Cabrera", "Campbell", "Cantlay", "Clark", "Conners", "Couples", "Day", "DeChambeau", "Echavarria", "English", "Fang", "Fitzpatrick", "Fleetwood", "Fox", "Garcia", "Gerard", "Gotterup", "Greyserman", "Griffin", "Hall", "Harman", "Hatton", "Henley", "Herrington", "N. Hojgaard", "R. Hojgaard", "Holtz", "Homa", "Hovland", "Howell", "Im", "Jarvis", "D. Johnson", "Z. Johnson", "Kataoka", "Keefer", "M. Kim", "Si Woo Kim", "Kitayama", "Koepka", "Laopakdee", "Lee", "Li", "Lowry", "MacIntyre", "Matsuyama", "McCarty", "McIlroy", "McKibbin", "McNealy", "Mickelson", "Morikawa", "Neergaard-Petersen", "Noren", "Novak", "Olazabal", "Ortiz", "Penge", "Potgieter", "Pulcini", "Rahm", "Rai", "Reed", "Reitan", "Riley", "Rose", "Schauffele", "Scheffler", "Schwartzel", "Scott", "Singh", "Smith", "Spaun", "Spieth", "Stevens", "Straka", "Taylor", "Thomas", "Valimaki", "Watson", "Weir", "Willett", "Woodland", "Young"];
-let S={mode:null,isAdmin:false,view:"leaderboard",config:{...DEF},golfers:[],entries:[],loaded:false,pinChecked:false,pinIsNew:false,pinErr:"",successMsg:"",editIdx:null,playerEmail:null,syncStatus:'',syncError:'',syncData:null,syncMatches:null,syncTournament:''};
+let S={mode:null,isAdmin:false,view:"leaderboard",config:{...DEF},golfers:[],entries:[],loaded:false,pinChecked:false,pinIsNew:false,pinErr:"",successMsg:"",editIdx:null,playerEmail:null,syncStatus:'',syncError:'',syncData:null,syncMatches:null,syncTournament:'',lbRound:'live'};
 const _deletedIds=new Set();
 
 let _PIN=null;
@@ -161,13 +161,18 @@ async function submitPin(pin,conf){
   }catch(e){S.pinErr="Could not verify PIN";R();}
 }
 
-function scoring(){
+function scoring(throughRound){
+  // throughRound: null/undefined = Live (uses ESPN live vs-par, current behavior).
+  //               1..4 = historical snapshot through that round (strokes only, no live vs-par).
+  const isHist=throughRound!=null;
   const gM={};S.golfers.forEach(g=>gM[g.name]=g);
-  const activeRounds=[0,1,2,3].filter(r=>S.golfers.some(g=>g.scores[r]!=null&&g.scores[r]!==""&&g.scores[r]!==0));
+  const activeRounds=isHist?[0,1,2,3].slice(0,throughRound):[0,1,2,3].filter(r=>S.golfers.some(g=>g.scores[r]!=null&&g.scores[r]!==""&&g.scores[r]!==0));
   const rp=activeRounds.length;
-  // Build live vs-par lookup from ESPN data
+  // Cuts hadn't happened yet through R1, so historical R1 view ignores cut status.
+  const applyCuts=!isHist||throughRound>=2;
+  // Live ESPN vs-par lookup — only meaningful for the Live view.
   const liveParMap={};
-  if(S._liveBoard&&S._liveBoard.length){S._liveBoard.forEach(g=>{
+  if(!isHist&&S._liveBoard&&S._liveBoard.length){S._liveBoard.forEach(g=>{
     const val=g.scoreToPar;
     let num=0;if(val&&val!=='-'&&val!=='E'){num=parseInt(val,10)||0;}
     const _n=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/Ø/g,'O');
@@ -176,7 +181,7 @@ function scoring(){
   });}
   const wvp=S.config.winnerScore!=null&&S.config.winnerScore!==""?S.config.winnerScore-S.config.par*4:null;
   const sc=S.entries.map(e=>{
-    const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,vsPar:0,isMC:false};const t=activeRounds.reduce((s,r)=>s+(g.scores[r]||0),0);const lp=liveParMap[pn]!=null?liveParMap[pn]:null;return{name:pn,total:t,vsPar:lp,isMC:g.cutStatus==="MC"};});
+    const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,vsPar:0,isMC:false};const t=activeRounds.reduce((s,r)=>s+(g.scores[r]||0),0);const lp=liveParMap[pn]!=null?liveParMap[pn]:null;return{name:pn,total:t,vsPar:lp,isMC:applyCuts&&g.cutStatus==="MC"};});
     const mc=pd.filter(p=>p.isMC).length,elim=mc>=2;let b4=null,drop=null,b4vp=null;
     if(!elim){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
     const vp=b4vp!=null?b4vp:(b4!=null?b4-S.config.par*4*rp:null);
@@ -191,18 +196,25 @@ function scoring(){
   return{scored:sc,roundsPlayed:rp,totalPool:pool,barStaff,prizePool,prizes,wvp};
 }
 
-function playerView(){
-  const gM={};S.golfers.forEach(g=>gM[g.name]=g);const vis=[0,1,2,3].filter(i=>S.config.publishedRounds[i]),maxR=vis.length>0?Math.max(...vis):-1;
-  // Live vs-par lookup
+function playerView(throughRound){
+  // throughRound: null = use all published rounds with live vs-par (current behavior).
+  //               1..4 = historical snapshot intersected with published rounds.
+  const isHist=throughRound!=null;
+  const gM={};S.golfers.forEach(g=>gM[g.name]=g);
+  const pubVis=[0,1,2,3].filter(i=>S.config.publishedRounds[i]);
+  const vis=isHist?pubVis.filter(r=>r<throughRound):pubVis;
+  const maxR=vis.length>0?Math.max(...vis):-1;
+  const applyCuts=!isHist||throughRound>=2;
+  // Live vs-par lookup — only for the Live view.
   const liveParMap={};
-  if(S._liveBoard&&S._liveBoard.length){S._liveBoard.forEach(g=>{
+  if(!isHist&&S._liveBoard&&S._liveBoard.length){S._liveBoard.forEach(g=>{
     const val=g.scoreToPar;let num=0;if(val&&val!=='-'&&val!=='E'){num=parseInt(val,10)||0;}
     const _n=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ø/g,'o').replace(/Ø/g,'O');
     liveParMap[g.name]=num;liveParMap[g.fullName]=num;liveParMap[_n(g.name)]=num;liveParMap[_n(g.fullName)]=num;
     if(g.fullName){const fi=g.fullName.split(' ')[0];if(fi)liveParMap[fi[0]+'. '+_n(g.name)]=num;}
   });}
   const sc=S.entries.map(e=>{
-    const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,vsPar:0,isMC:false};const t=g.scores.reduce((s,v,ri)=>s+(vis.includes(ri)?(v||0):0),0);const lp=liveParMap[pn]!=null?liveParMap[pn]:null;return{name:pn,total:t,vsPar:lp,isMC:g.cutStatus==="MC"&&maxR>=1};});
+    const pd=e.picks.map(pn=>{const g=gM[pn];if(!g)return{name:pn,total:0,vsPar:0,isMC:false};const t=g.scores.reduce((s,v,ri)=>s+(vis.includes(ri)?(v||0):0),0);const lp=liveParMap[pn]!=null?liveParMap[pn]:null;return{name:pn,total:t,vsPar:lp,isMC:applyCuts&&g.cutStatus==="MC"&&maxR>=1};});
     const mc=pd.filter(p=>p.isMC).length,elim=mc>=2;let b4=null,drop=null,b4vp=null;
     if(!elim&&pd.some(p=>p.total>0)){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>b.total-a.total);drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
     const vp=b4vp!=null?b4vp:(b4!=null?b4-S.config.par*vis.length*4:null);
@@ -707,7 +719,10 @@ function rMastersBoard(){
 }
 
 function rLeaderboard(){
-  const isA=S.isAdmin,{scored:sc,totalPool:tp}=scoring(),display=isA?sc:playerView();
+  const isA=S.isAdmin;
+  const through=S.lbRound==='live'?null:Number(S.lbRound);
+  const {scored:sc,totalPool:tp}=scoring(through);
+  const display=isA?sc:playerView(through);
   const frag=document.createDocumentFragment();
 
   // Masters live leaderboard for players (above entry board)
@@ -721,12 +736,26 @@ function rLeaderboard(){
 
   const card=$('div',{className:'card'}),hdr=$('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'8px'}});
   hdr.append($('h2',{className:'hd'},isA?'Leaderboard':'Pool Standings'));
+  // Round-filter selector: Live + any historical rounds with data (players also need rounds published)
+  const roundsWithData=[0,1,2,3].filter(r=>S.golfers.some(g=>g.scores[r]!=null&&g.scores[r]!==''));
+  const availForFilter=isA?roundsWithData:roundsWithData.filter(r=>S.config.publishedRounds[r]);
+  if(availForFilter.length){
+    const rsWrap=$('div',{style:{display:'flex',alignItems:'center',gap:'6px'}});
+    rsWrap.append($('span',{style:{fontSize:'11px',color:'var(--med)'}},'View:'));
+    const rs=$('select',{style:{fontSize:'12px',padding:'4px 6px',borderRadius:'4px',border:'1px solid var(--med)'}});
+    rs.append($('option',{value:'live'},'Live'));
+    availForFilter.forEach(r=>{rs.append($('option',{value:String(r+1)},r===3?'Final (after R4)':'After R'+(r+1)));});
+    rs.value=S.lbRound;
+    rs.addEventListener('change',()=>{S.lbRound=rs.value;R();});
+    rsWrap.append(rs);
+    hdr.append(rsWrap);
+  }
   const bg=$('div',{style:{display:'flex',gap:'6px'}});
   ['R1','R2','R3','R4'].forEach((l,i)=>{const hd=S.golfers.some(g=>g.scores[i]!=null),pub=S.config.publishedRounds[i],show=isA||pub;
     bg.append($('span',{className:'badge',style:{background:hd&&show?'var(--lt-green)':'var(--gray)',color:hd&&show?'var(--green)':'var(--med)'}},l+(pub?' ✓':'')));});
   hdr.append(bg);card.append(hdr);
   const act=display.filter(e=>!e.eliminated).length,eli=display.filter(e=>e.eliminated).length;
-  const pp=calcPerfectPick();
+  const pp=through?calcPerfectPick(undefined,[0,1,2,3].slice(0,through),through===1):calcPerfectPick();
   if(isA){
     const m=$('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'12px',margin:'16px 0'}});
     [{l:'Entries',v:S.entries.length},{l:'Active',v:act,c:'var(--green)'},{l:'Eliminated',v:eli,c:'var(--red)'},{l:'Pool',v:'$'+tp.toLocaleString()},{l:'Perfect Pick',v:pp.score||'\u2014',c:'var(--dk-green)'}].forEach(x=>{
@@ -1608,11 +1637,11 @@ function updateWhatIfLeaderboard(){
 }
 
 
-function calcPerfectPick(golferSource,pubRounds){
+function calcPerfectPick(golferSource,pubRounds,skipCuts){
   const gs=golferSource||S.golfers;
   const pr=pubRounds||[0,1,2,3].filter(r=>S.config.publishedRounds&&S.config.publishedRounds[r]);
   if(!pr.length)return{score:0,names:[]};
-  const made=gs.filter(g=>g.cutStatus!=='MC');
+  const made=skipCuts?gs:gs.filter(g=>g.cutStatus!=='MC');
   const totals=made.map(g=>{
     let t=0;pr.forEach(r=>{t+=(g.scores[r]||0);});
     return{name:g.name,total:t};
