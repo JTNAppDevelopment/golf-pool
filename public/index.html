@@ -246,10 +246,13 @@ function $(tag,a,...c){const e=document.createElement(tag);if(a)Object.entries(a
 function rLanding(){
   return $('div',{className:'landing'},
     $('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',gap:'20px',marginBottom:'24px'}},$('img',{src:CCC_LOGO,style:{width:'80px',height:'80px',objectFit:'contain'}}),logoSVG(1.4)),
-    $('div',{className:'grid2',style:{gap:'16px'}},
-      $('div',{className:'card role-card',style:{borderColor:'var(--green)',position:'relative'},onClick:()=>{S.mode='admin';checkPin();}},$('div',{style:{fontSize:'48px',marginBottom:'8px'}},'📋'),$('h3',{className:'hd'},'Commissioner Only'),$('p',{className:'sub'},S.config.commissionerName?S.config.commissionerName:'Set up and manage pool'),$('div',{style:{position:'absolute',bottom:'10px',right:'12px',fontSize:'18px',opacity:'0.5'}},'⛳')),
-      $('div',{className:'card role-card',style:{borderColor:'var(--gold)',position:'relative'},onClick:()=>{S.mode='player';S.view='leaderboard';R();}},$('div',{style:{fontSize:'48px',marginBottom:'8px'}},'🏌️'),$('h3',{className:'hd',style:{color:'var(--dk-green)'}},'Player'),$('p',{className:'sub'},'Enter picks & view standings'),$('div',{style:{position:'absolute',bottom:'10px',right:'12px',fontSize:'18px',opacity:'0.5'}},'⛳'))
-    ));
+    // Player card is the only prominent option — players are the audience for this landing.
+    $('div',{className:'card role-card',style:{borderColor:'var(--gold)',position:'relative',maxWidth:'420px',margin:'0 auto'},onClick:()=>{S.mode='player';S.view='leaderboard';R();}},$('div',{style:{fontSize:'48px',marginBottom:'8px'}},'🏌️'),$('h3',{className:'hd',style:{color:'var(--dk-green)'}},'Player'),$('p',{className:'sub'},'Enter picks & view standings'),$('div',{style:{position:'absolute',bottom:'10px',right:'12px',fontSize:'18px',opacity:'0.5'}},'⛳')),
+    // Commissioner access — small text link, only the commissioner uses this.
+    $('div',{style:{textAlign:'center',marginTop:'32px',fontSize:'12px',color:'var(--med)'}},
+      $('a',{href:'#',style:{color:'var(--med)',textDecoration:'underline',cursor:'pointer'},onClick:(ev)=>{ev.preventDefault();S.mode='admin';checkPin();}},'Commissioner access')
+    )
+  );
 }
 
 function rPin(){
