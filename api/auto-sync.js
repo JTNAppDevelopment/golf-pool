@@ -108,7 +108,19 @@ export default async function handler(req, res) {
       const thru = st.thru != null ? st.displayThru || String(st.thru) : '';
       const completed = st.type ? st.type.completed : false;
       const movement = c.movement || 0;
-      const today = st.todayDetail || '';
+      // ESPN clears todayDetail once a golfer finishes their round. Reconstruct from the
+      // current-round linescore so finished-today golfers don't show a blank Today cell.
+      let today = st.todayDetail || '';
+      if (!today) {
+        const period = st.period;
+        const isCompleted = st.type && st.type.completed;
+        if (period && (isCompleted || st.thru >= 18)) {
+          const ls = (c.linescores || [])[period - 1];
+          if (ls && ls.displayValue && ls.displayValue !== '-') {
+            today = ls.displayValue + '(F)';
+          }
+        }
+      }
       const rounds = (c.linescores || []).map(ls => ls.displayValue != null ? ls.displayValue : '');
       return { name: lastName, fullName: a.displayName || '', pos, scoreToPar, thru, completed, movement, today, rounds };
     }).sort((a, b) => {
