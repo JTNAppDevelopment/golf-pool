@@ -236,7 +236,9 @@ function playerView(throughRound){
     if(!elim&&pd.some(p=>p.total>0)){if(mc===1){const a=pd.filter(p=>!p.isMC);b4=a.reduce((s,p)=>s+p.total,0);b4vp=a.every(p=>p.vsPar!=null)?a.reduce((s,p)=>s+p.vsPar,0):null;drop=pd.find(p=>p.isMC)?.name;}else{const so=[...pd].sort((a,b)=>dropScore(b)-dropScore(a));drop=so[0]?.name;const kept=so.slice(1);b4=kept.reduce((s,p)=>s+p.total,0);b4vp=kept.every(p=>p.vsPar!=null)?kept.reduce((s,p)=>s+p.vsPar,0):null;}}
     const vp=b4vp!=null?b4vp:(b4!=null?b4-S.config.par*vis.length*4:null);
     return{...e,playerData:pd,mcCount:mc,eliminated:elim,best4:b4,droppedPlayer:drop,vsPar:vp};
-  }).filter(e=>e.vsPar!=null).sort((a,b)=>(a.vsPar!=null?a.vsPar:9999)-(b.vsPar!=null?b.vsPar:9999));
+  // Keep eliminated entries (vsPar is null because !elim gates the b4/vp calc) so the
+  // player view shows ELIM rows at the bottom just like the commissioner view.
+  }).filter(e=>e.vsPar!=null||e.eliminated).sort((a,b)=>(a.vsPar!=null?a.vsPar:9999)-(b.vsPar!=null?b.vsPar:9999));
   let rank=1;sc.forEach((e,i)=>{if(e.eliminated){e.rank=null;return;}if(i>0&&e.vsPar===sc[i-1].vsPar)e.rank=sc[i-1].rank;else e.rank=rank;rank=i+2;});
   return sc;
 }
