@@ -467,7 +467,132 @@ function rGolfers(){
     tb.append(row);});tbl.append(tb);w.append(tbl);card.append(w);return card;
 }
 
+function rCalcuttaEntryForm(isA){
+  const c=S.config;
+  const fee=c.mainFee||80;
+  const locked=c.locked||(c.deadline&&new Date(c.deadline)<new Date());
+  if(locked&&!isA)return $('div',{className:'card',style:{background:'var(--gray)',textAlign:'center'}},$('p',{style:{color:'var(--med)',fontSize:'16px'}},'Entries are closed'));
+  const frag=document.createDocumentFragment();
+  // Load previous entry for editing
+  let iPart='',iEmail='',iPay='',iAlloc={};
+  if(S.editIdx!==null&&S.entries[S.editIdx]){
+    const e=S.entries[S.editIdx];
+    iPart=e.participant||'';iEmail=e.email||'';iPay=e.payMethod||'';iAlloc=Object.assign({},e.allocations||{});
+  }
+  const card=$('div',{className:'card'});
+  card.append($('h2',{className:'hd'},S.editIdx!==null?'Edit entry':'Enter the Presidents Cup pool'));
+  card.append($('p',{className:'sub',style:{margin:'4px 0 16px'}},'Spread $'+fee+' across the 24 players. Any allocation you like — all $'+fee+' on one, or split across many.'));
+  // Participant + email row
+  const meta=$('div',{className:'grid2',style:{marginTop:'8px'}});
+  const partI=$('input',{type:'text',placeholder:'Your name',value:iPart,maxLength:'40'});
+  const emailI=$('input',{type:'email',placeholder:'Your email',value:iEmail,maxLength:'80'});
+  meta.append($('div',null,$('label',{className:'lbl'},'Name'),partI),$('div',null,$('label',{className:'lbl'},'Email'),emailI));
+  card.append(meta);
+  // Payment method selector
+  const payWrap=$('div',{style:{marginTop:'16px'}});
+  payWrap.append($('label',{className:'lbl'},'Payment method'));
+  const payBox=$('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap'}});
+  let payVal=iPay;
+  const payOpts=[];
+  if(c.venmoHandle)payOpts.push(['venmo','Venmo']);
+  if(c.zelleHandle)payOpts.push(['zelle','Zelle']);
+  if(c.acceptCash!==false)payOpts.push(['cash','Cash']);
+  payOpts.forEach(([v,l])=>{
+    const b=$('button',{type:'button',className:'pub-box'+(payVal===v?' on':''),style:{padding:'8px 16px',borderRadius:'6px',border:'2px solid var(--border)',background:'white',cursor:'pointer'}},l);
+    b.addEventListener('click',()=>{payVal=v;Array.from(payBox.children).forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+    payBox.append(b);
+  });
+  payWrap.append(payBox);
+  card.append(payWrap);
+  frag.append(card);
+  // Allocation grid
+  const allocCard=$('div',{className:'card',style:{marginTop:'16px'}});
+  allocCard.append($('h3',{className:'hd',style:{fontSize:'18px',marginBottom:'8px'}},'Your $'+fee+' allocation'));
+  // Running total display (sticky-ish at top of card)
+  const totalDisplay=$('div',{style:{padding:'12px 16px',background:'var(--lt-green)',borderRadius:'8px',margin:'0 0 16px 0',display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:'15px',fontWeight:'600'}});
+  const totalLbl=$('span',null,'Allocated:');
+  const totalVal=$('span',{style:{fontWeight:'700',fontSize:'18px'}});
+  totalDisplay.append(totalLbl,totalVal);
+  allocCard.append(totalDisplay);
+  // Store input refs so we can update total live
+  const inputRefs={};
+  const recomputeTotal=()=>{
+    let sum=0;
+    Object.entries(inputRefs).forEach(([name,inp])=>{
+      const v=parseFloat(inp.value);
+      if(!isNaN(v)&&v>0)sum+=v;
+    });
+    const remaining=fee-sum;
+    totalVal.textContent='$'+sum.toFixed(2).replace(/\.00$/,'')+' / $'+fee;
+    if(sum===fee){totalDisplay.style.background='var(--lt-green)';totalVal.style.color='var(--green)';}
+    else if(sum>fee){totalDisplay.style.background='#FFE4E4';totalVal.style.color='var(--red)';totalVal.textContent+=' (over by $'+(sum-fee).toFixed(2).replace(/\.00$/,'')+')';}
+    else{totalDisplay.style.background='#FFF8E1';totalVal.style.color='#B8860B';totalVal.textContent+=' ($'+remaining.toFixed(2).replace(/\.00$/,'')+' remaining)';}
+    return sum;
+  };
+  // Build the 24 player rows, grouped by team
+  const buildTeam=(label,teamKey,color)=>{
+    const hdr=$('div',{style:{background:color,color:'white',padding:'8px 12px',borderRadius:'6px',fontWeight:'700',fontSize:'13px',letterSpacing:'0.5px',margin:'12px 0 8px 0'}},label);
+    allocCard.append(hdr);
+    const grid=$('div',{style:{display:'grid',gridTemplateColumns:'1fr auto',gap:'6px 12px',alignItems:'center'}});
+    S.golfers.filter(g=>g.team===teamKey).forEach(g=>{
+      const nameCell=$('div',{style:{fontSize:'14px',fontWeight:'500',padding:'6px 0'}},g.name);
+      const inpWrap=$('div',{style:{display:'flex',alignItems:'center',gap:'4px'}});
+      inpWrap.append($('span',{style:{color:'var(--med)',fontSize:'14px'}},'$'));
+      const inp=$('input',{type:'number',min:'0',step:'1',placeholder:'0',style:{width:'80px',padding:'6px 8px',borderRadius:'4px',border:'1px solid var(--border)',textAlign:'right',fontSize:'14px'}});
+      if(iAlloc[g.name]!=null&&iAlloc[g.name]>0)inp.value=String(iAlloc[g.name]);
+      inp.addEventListener('input',recomputeTotal);
+      inpWrap.append(inp);
+      inputRefs[g.name]=inp;
+      grid.append(nameCell,inpWrap);
+    });
+    allocCard.append(grid);
+  };
+  buildTeam('🇺🇸  U.S. TEAM','US','#B22234');
+  buildTeam('🌐  INTERNATIONAL TEAM','INTL','#003D7C');
+  // Initial total render
+  recomputeTotal();
+  // Submit
+  const btnRow=$('div',{style:{display:'flex',gap:'8px',marginTop:'20px'}});
+  const submitBtn=$('button',{className:'btn btn-p',style:{fontSize:'16px',padding:'12px 24px'}},S.editIdx!==null?'Update entry':'Submit entry');
+  submitBtn.addEventListener('click',()=>{
+    const nm=partI.value.trim();
+    if(!nm){alert('Enter your name');return;}
+    const em=emailI.value.trim();
+    if(!em){alert('Enter your email');return;}
+    if(!payVal){alert('Pick a payment method');return;}
+    const allocations={};
+    let sum=0;
+    Object.entries(inputRefs).forEach(([name,inp])=>{
+      const v=parseFloat(inp.value);
+      if(!isNaN(v)&&v>0){allocations[name]=v;sum+=v;}
+    });
+    if(sum===0){alert('Allocate some money to at least one player');return;}
+    if(sum>fee){alert('You have allocated $'+sum.toFixed(2).replace(/\.00$/,'')+' but the entry fee is $'+fee+'. Reduce your allocations.');return;}
+    if(sum<fee){if(!confirm('You have only allocated $'+sum.toFixed(2).replace(/\.00$/,'')+' of the $'+fee+' entry fee. Any unspent amount forfeits its share of the pool. Submit anyway?'))return;}
+    // Persist entry (calcutta shape)
+    const sameName=S.entries.filter((e,j)=>e.participant===nm&&j!==(S.editIdx||999999));
+    const entryNum=S.editIdx!==null?(S.entries[S.editIdx].entryNum||1):(sameName.length+1);
+    const entry={
+      id:S.editIdx!==null?S.entries[S.editIdx].id:Date.now().toString(),
+      participant:nm,entryNum:entryNum,email:em,
+      payMethod:payVal,payStatus:S.editIdx!==null?(S.entries[S.editIdx].payStatus||'unpaid'):'unpaid',
+      allocations:allocations,totalAllocated:sum
+    };
+    if(S.editIdx!==null){S.entries[S.editIdx]=entry;S.successMsg='Updated: '+nm;S.editIdx=null;}
+    else{S.entries.push(entry);S.successMsg='Entered: '+nm;try{localStorage.setItem('best4-player-email',em);S.playerEmail=em;}catch(e){}}
+    save();R();window.scrollTo({top:0,behavior:'smooth'});
+  });
+  btnRow.append(submitBtn);
+  if(S.editIdx!==null)btnRow.append($('button',{className:'btn btn-o',style:{fontSize:'16px',padding:'12px 24px'},onClick:()=>{S.editIdx=null;S.successMsg='';R();}},'Cancel'));
+  allocCard.append(btnRow);
+  frag.append(allocCard);
+  if(S.successMsg)frag.prepend($('div',{className:'success-msg',style:{padding:'12px 16px',borderRadius:'8px',marginBottom:'12px'}},S.successMsg));
+  return frag;
+}
+
 function rEntryForm(isA){
+  // Calcutta mode swaps in a $-allocation form instead of the 5-picks form.
+  if(S.config.gameType==='calcutta')return rCalcuttaEntryForm(isA);
   const locked=S.config.locked||(S.config.deadline&&new Date(S.config.deadline)<new Date());
   if(locked&&!isA)return $('div',{className:'card',style:{background:'var(--gray)',textAlign:'center'}},$('p',{style:{color:'var(--med)',fontSize:'16px'}},'Entries are closed'));
   const frag=document.createDocumentFragment();
