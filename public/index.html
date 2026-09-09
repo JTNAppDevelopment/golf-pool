@@ -409,8 +409,8 @@ function rSetup(){
   // Fields common to every game type
   g.append(mf('Commissioner name','commissionerName','text',c.commissionerName),tournD,mf('Tournament name','name','text',c.name),mf('Course','course','text',c.course));
   if(c.gameType==='calcutta'){
-    // Calcutta: only entry fee applies. par/numPicks/pickFee/splits are stroke-play concepts.
-    g.append(mf('Entry fee ($)','mainFee','number',c.mainFee));
+    // Calcutta: entry fee + optional side-bet (pick-the-winning-team) fee.
+    g.append(mf('Entry fee ($)','mainFee','number',c.mainFee),mf('Team-bet side fee ($)','pickTeamFee','number',c.pickTeamFee!=null?c.pickTeamFee:10));
   } else {
     g.append(mf('Par (per round)','par','number',c.par),mf('Picks per entry','numPicks','number',c.numPicks),mf('Main pool entry fee ($)','mainFee','number',c.mainFee),mf('Pick the winner fee ($)','pickFee','number',c.pickFee),sf('1st place %',0),sf('2nd place %',1),sf('3rd place %',2));
   }
