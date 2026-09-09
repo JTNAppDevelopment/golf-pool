@@ -1692,9 +1692,9 @@ function getCalcuttaRulesHTML(c,payStr,dl){
       '<div style="font-size:17px;font-weight:700;color:'+primary+';margin-bottom:10px;">How it works</div>'+
       '<ol style="margin:0;padding-left:22px;font-size:14.5px;">'+
         '<li><strong>Enter $'+fee+'.</strong> One flat entry fee per entrant. Pay via '+payStr+'.</li>'+
-        '<li><strong>Distribute your $'+fee+' across the 24 Presidents Cup players.</strong> Any allocation you want &mdash; all $'+fee+' on one player, $10 across six players, or anything in between. Your allocations must add up to $'+fee+' (or less &mdash; but any unspent money forfeits its share of the pool).</li>'+
-        '<li><strong>Every Cup point is worth an equal share of the pool.</strong> The Presidents Cup awards 30 points total across 30 matches (5 Thursday four-balls, 5 Friday foursomes, 4 four-balls + 4 foursomes Saturday, 12 Sunday singles). Ties yield 0.5 to each player.</li>'+
-        '<li><strong>Your payout comes from the players you funded.</strong> For each player who scores points: their total pool share = <em>(their points &divide; 30)</em> &times; total pool. That share gets split among the entrants who put money on that player, proportional to what each entrant put in.</li>'+
+        '<li><strong>Distribute your $'+fee+' across the 24 Presidents Cup players.</strong> Any allocation you want &mdash; all $'+fee+' on one player, or split however you like across as many as you want. Your allocations must add up to $'+fee+'.</li>'+
+        '<li><strong>Every Cup point is worth 1/30th of the pool.</strong> The Presidents Cup awards 30 points total across 30 matches (5 Thursday four-balls, 5 Friday foursomes, 4 four-balls + 4 foursomes Saturday, 12 Sunday singles). Ties yield 0.5 to each player.</li>'+
+        '<li><strong>Your payout comes from the players you funded.</strong> For each player who scores points, his total pool share = <em>(his points &divide; 30)</em> &times; total pool. That share gets split among the entrants who put money on that player, in proportion to each entrant\'s bid on that player.</li>'+
       '</ol>'+
     '</div>'+
     '<div style="margin:22px 0;padding:20px;background:#FFFAF0;border-radius:10px;border-left:5px solid '+accent+';color:#222;line-height:1.7;">'+
@@ -1702,20 +1702,20 @@ function getCalcuttaRulesHTML(c,payStr,dl){
       '<div style="font-size:14.5px;">'+
         'Popular players get "bid up" &mdash; when a lot of entrants put money on the same superstar, everyone\'s slice of that player\'s payout gets smaller. Sleeper picks stay cheap: if you\'re the only one betting on a role player and he wins 3 points, your dollars-per-point payout can dwarf what the crowd earned on Scheffler.'+
         '<br><br>'+
-        '<strong>Example</strong> (20 entrants &times; $'+fee+' = $'+(20*fee).toLocaleString()+' pool):'+
+        '<strong>Example</strong> (50 entrants &times; $'+fee+' = $'+(50*fee).toLocaleString()+' pool):'+
         '<ul style="margin:8px 0 0 0;padding-left:22px;">'+
-          '<li>Scheffler scores 4 pts. His pool share = (4&divide;30) &times; $'+(20*fee).toLocaleString()+' = <strong>$'+Math.round(4*20*fee/30).toLocaleString()+'</strong>.</li>'+
-          '<li>Total dollars bid on Scheffler across all entrants: $500. You put $50 on him. Your cut = ($50 &divide; $500) &times; $'+Math.round(4*20*fee/30).toLocaleString()+' = <strong>$'+Math.round((50/500)*4*20*fee/30).toLocaleString()+'</strong>.</li>'+
-          '<li>Meanwhile you also put $25 on a sleeper who scored 3 pts. Only $75 total was bid on him. Your cut = ($25 &divide; $75) &times; ((3&divide;30) &times; $'+(20*fee).toLocaleString()+') = <strong>$'+Math.round((25/75)*(3/30)*20*fee).toLocaleString()+'</strong>.</li>'+
+          '<li>Scheffler scores 4 pts. His pool share = (4&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(4*50*fee/30).toLocaleString()+'</strong>.</li>'+
+          '<li>Total dollars bid on Scheffler across all entrants: $1,000. You put $50 on him. Your cut = ($50 &divide; $1,000) &times; $'+Math.round(4*50*fee/30).toLocaleString()+' = <strong>$'+Math.round((50/1000)*4*50*fee/30).toLocaleString()+'</strong>.</li>'+
+          '<li>Meanwhile you also put $25 on a sleeper who scored 3 pts. Only $100 total was bid on him. Your cut = ($25 &divide; $100) &times; ((3&divide;30) &times; $'+(50*fee).toLocaleString()+') = <strong>$'+Math.round((25/100)*(3/30)*50*fee).toLocaleString()+'</strong>.</li>'+
         '</ul>'+
       '</div>'+
     '</div>'+
     '<div style="margin:22px 0;padding:20px;background:'+ltBg+';border-radius:10px;color:#222;line-height:1.7;">'+
       '<div style="font-size:17px;font-weight:700;color:'+primary+';margin-bottom:10px;">The 24 players</div>'+
       '<div style="font-size:13.5px;">'+
-        '<strong style="color:#B22234;">&#127482;&#127480; U.S. Team (Captain Snedeker):</strong> Scheffler, Young, Clark, Burns, Henley, Morikawa, Bridgeman, Cantlay, Gotterup, Koivun, Schauffele, Thomas.'+
+        '<strong style="color:#B22234;">&#127482;&#127480; U.S. Team (Captain Snedeker):</strong> Scottie Scheffler, Cameron Young, Wyndham Clark, Sam Burns, Russell Henley, Collin Morikawa, Jacob Bridgeman, Patrick Cantlay, Chris Gotterup, Jackson Koivun, Xander Schauffele, Justin Thomas.'+
         '<br><br>'+
-        '<strong style="color:'+primary+';">&#127760; International Team (Captain Ogilvy):</strong> Si Woo Kim, Fox, Matsuyama, Min Woo Lee, Tom Kim, Adam Scott, Bezuidenhout, Conners, Echavarria, Hisatsune, Im, Nick Taylor.'+
+        '<strong style="color:'+primary+';">&#127760; International Team (Captain Ogilvy):</strong> Si Woo Kim, Ryan Fox, Hideki Matsuyama, Min Woo Lee, Tom Kim, Adam Scott, Christiaan Bezuidenhout, Corey Conners, Nico Echavarria, Ryo Hisatsune, Sungjae Im, Nick Taylor.'+
       '</div>'+
     '</div>'+
     '<div style="margin:22px 0;padding:16px 20px;background:#FFF8E1;border-radius:8px;border-left:4px solid #D4A017;font-size:14px;color:#333;line-height:1.6;">'+
