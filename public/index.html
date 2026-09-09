@@ -344,7 +344,11 @@ function rPin(){
 }
 
 function rTopbar(){
-  const tabs=S.isAdmin?['setup','golfers','entries','scores','leaderboard','payouts','announce','archive']:['leaderboard','enter','whatif','rules'];
+  // Hide stroke-play-only tabs when the pool is running Calcutta mode.
+  const isCalc=S.config.gameType==='calcutta';
+  const tabs=S.isAdmin
+    ?(isCalc?['setup','golfers','entries','scores','leaderboard','announce','archive']:['setup','golfers','entries','scores','leaderboard','payouts','announce','archive'])
+    :(isCalc?['leaderboard','enter','rules']:['leaderboard','enter','whatif','rules']);
   const bar=$('div',{className:'topbar',style:{position:'relative'}});
   bar.append($('img',{src:CCC_LOGO,style:{position:'absolute',top:'50%',right:'16px',transform:'translateY(-50%)',width:'52px',height:'52px',objectFit:'contain',opacity:'0.85'}}));
   const inner=$('div',{className:'topbar-inner'},
@@ -479,7 +483,32 @@ function rSetup(){
   return card;
 }
 
+function rCalcuttaGolfers(){
+  // Calcutta view: no stroke inputs. Just a team-grouped read-only roster.
+  // (Points entry lives on the Scores tab.)
+  const frag=document.createDocumentFragment();
+  const card=$('div',{className:'card'});
+  card.append($('h2',{className:'hd'},'Field ('+S.golfers.length+' players)'));
+  card.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'The 24 Presidents Cup players. Enter their Cup points on the Scores tab.'));
+  const buildTeam=(label,teamKey,color)=>{
+    card.append($('div',{style:{background:color,color:'white',padding:'8px 12px',borderRadius:'6px',fontWeight:'700',fontSize:'13px',letterSpacing:'0.5px',margin:'12px 0 8px 0'}},label));
+    const grid=$('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))',gap:'8px'}});
+    S.golfers.filter(g=>g.team===teamKey).forEach(g=>{
+      const pill=$('div',{style:{padding:'8px 12px',background:'var(--gray)',borderRadius:'6px',fontSize:'14px',display:'flex',justifyContent:'space-between',alignItems:'center'}});
+      pill.append($('span',null,g.name));
+      if(g.points)pill.append($('span',{style:{fontWeight:'700',color:'var(--green)',fontSize:'12px'}},(+g.points).toFixed(1).replace(/\.0$/,'')+' pt'));
+      grid.append(pill);
+    });
+    card.append(grid);
+  };
+  buildTeam('🇺🇸  U.S. TEAM','US','#B22234');
+  buildTeam('🌐  INTERNATIONAL TEAM','INTL','#003D7C');
+  frag.append(card);
+  return frag;
+}
+
 function rGolfers(){
+  if(S.config.gameType==='calcutta')return rCalcuttaGolfers();
   const card=$('div',{className:'card'});const hdr=$('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}});
   hdr.append($('h2',{className:'hd'},'Golfer field ('+S.golfers.length+')'));
   if(S.golfers.length>0&&S.golfers.every(g=>g.scores.every(s=>s==null||s===''))){hdr.append($('p',{style:{fontSize:'12px',color:'var(--med)',marginTop:'4px'}},'Field loaded ('+(S.config.name||'tournament')+'). Scores are empty — safe to open entries.'));}
@@ -821,7 +850,56 @@ tipCustom.addEventListener('input',()=>{if(+tipCustom.value<0)tipCustom.value=0;
   card.append(btns);frag.append(card);return frag;
 }
 
+function rCalcuttaEntryList(isA){
+  const card=$('div',{className:'card'});
+  const fee=S.config.mainFee||80;
+  card.append($('h2',{className:'hd'},'Entries ('+S.entries.length+')'));
+  const totalPool=S.entries.length*fee;
+  card.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Pool: $'+totalPool.toLocaleString()+' · $'+fee+' entry.'));
+  if(!S.entries.length){card.append($('p',{className:'sub',style:{textAlign:'center',padding:'20px'}},'No entries yet.'));return card;}
+  const locked=S.config.locked||(S.config.deadline&&new Date(S.config.deadline)<new Date());
+  const w=$('div',{className:'overflow-x'}),tbl=$('table');
+  const hds=isA?['#','Participant','Email','Allocated','Paid','Method','']:['#','Participant','Allocated'];
+  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1||i===2?'left':''},t)))));
+  const tb=$('tbody');
+  S.entries.forEach((e,i)=>{
+    const isMe=!isA&&S.playerEmail&&e.email&&e.email.toLowerCase()===S.playerEmail.toLowerCase();
+    const row=$('tr',{style:{background:isMe?'#FFF8E1':(i%2===0?'var(--gray)':'white')}});
+    row.append($('td',{style:{fontWeight:'600'}},String(i+1)));
+    const nt=$('td',{className:'left',style:{fontWeight:'600'}});
+    nt.append(document.createTextNode(e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')));
+    if(isMe)nt.append(' '), nt.append($('span',{className:'badge',style:{background:'var(--gold)',color:'var(--dk-green)',fontSize:'9px'}},'YOU'));
+    // Show allocations breakdown if locked or if this is my entry
+    if(locked||isMe||isA){
+      const allocs=Object.entries(e.allocations||{}).sort((a,b)=>b[1]-a[1]);
+      if(allocs.length){
+        const line=$('div',{style:{fontSize:'11px',color:'var(--med)',fontWeight:'400',marginTop:'2px'}},allocs.map(([p,amt])=>p+' $'+amt).join(' · '));
+        nt.append(line);
+      }
+    }
+    row.append(nt);
+    if(isA)row.append($('td',{className:'left',style:{fontSize:'11px',color:'var(--med)'}},e.email||''));
+    row.append($('td',{style:{fontWeight:'600'}},'$'+(e.totalAllocated||0)));
+    if(isA){
+      const isPaid=e.payStatus==='paid';
+      const payTd=$('td');
+      const payBtn=$('button',{className:'link-btn',style:{color:isPaid?'var(--green)':'var(--red)',padding:'8px 12px',fontWeight:'600'},onClick:()=>{S.entries[i].payStatus=isPaid?'unpaid':'paid';save();R();}},isPaid?'✓ Paid':'Unpaid');
+      payTd.append(payBtn);row.append(payTd);
+      row.append($('td',{style:{fontSize:'11px'}},e.payMethod||''));
+      const actTd=$('td');
+      const editBtn=$('button',{className:'link-btn',style:{color:'var(--green)',padding:'8px 12px',fontWeight:'600'},onClick:()=>{S.editIdx=i;S.successMsg='';R();window.scrollTo({top:0,behavior:'smooth'});}},'Edit');
+      const sep=$('span',{style:{color:'var(--med)',padding:'0 8px',userSelect:'none'}},'|');
+      const delBtn=$('button',{className:'link-btn',style:{color:'var(--red)',padding:'8px 12px'},onClick:()=>{if(confirm('Delete '+e.participant+'?')){_deletedIds.add(e.id);S.entries.splice(i,1);save();R();}}},'Del');
+      actTd.append(editBtn,sep,delBtn);row.append(actTd);
+    }
+    tb.append(row);
+  });
+  tbl.append(tb);w.append(tbl);card.append(w);
+  return card;
+}
+
 function rEntryList(isA){
+  if(S.config.gameType==='calcutta')return rCalcuttaEntryList(isA);
   const card=$('div',{className:'card'});
   const totalOwed=S.entries.length*S.config.mainFee+S.entries.filter(e=>e.pickWinner).length*S.config.pickFee;
   const totalPaid=S.entries.filter(e=>e.payStatus==='paid').reduce((s,e)=>{let amt=S.config.mainFee;if(e.pickWinner)amt+=S.config.pickFee;return s+amt;},0);
