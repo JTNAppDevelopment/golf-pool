@@ -188,6 +188,49 @@ async function submitPin(pin,conf){
   }catch(e){S.pinErr="Could not verify PIN";R();}
 }
 
+function calcuttaScoring(){
+  // Presidents Cup Calcutta payout math.
+  //   pool = entries × fee
+  //   for each player p who scored points > 0:
+  //     playerShare = (p.points / totalPoints) × pool
+  //     entrant's cut = (their $ on p / total $ on p across all entrants) × playerShare
+  //   entrant.payout = sum of cuts across all their allocations
+  const fee=S.config.mainFee||80;
+  const totalPoints=(S.config.totalPoints|0)||30;
+  const totalPool=S.entries.length*fee;
+  // Total $ allocated per player across the pool
+  const playerTotals={};
+  S.entries.forEach(e=>{
+    Object.entries(e.allocations||{}).forEach(([p,amt])=>{playerTotals[p]=(playerTotals[p]||0)+(+amt||0);});
+  });
+  // Points per player (stored on golfer.points)
+  const playerPoints={};
+  S.golfers.forEach(g=>{playerPoints[g.name]=(+g.points||0);});
+  const pointsScored=Object.values(playerPoints).reduce((s,p)=>s+p,0);
+  // Per-entry payout
+  const scored=S.entries.map(e=>{
+    const allocs=e.allocations||{};
+    const totalAlloc=Object.values(allocs).reduce((s,v)=>s+(+v||0),0);
+    let payout=0;
+    const breakdown=[];
+    Object.entries(allocs).forEach(([p,amt])=>{
+      const pts=playerPoints[p]||0;
+      const bidTotal=playerTotals[p]||0;
+      if(pts<=0||bidTotal<=0){breakdown.push({player:p,amt:+amt||0,pts,share:0});return;}
+      const playerShare=(pts/totalPoints)*totalPool;
+      const myFraction=(+amt||0)/bidTotal;
+      const cut=myFraction*playerShare;
+      payout+=cut;
+      breakdown.push({player:p,amt:+amt||0,pts,share:cut});
+    });
+    return{...e,totalAllocated:totalAlloc,payout,breakdown};
+  });
+  // Rank by payout desc
+  scored.sort((a,b)=>b.payout-a.payout);
+  let rank=1;scored.forEach((e,i)=>{if(i>0&&Math.abs(e.payout-scored[i-1].payout)<0.005)e.rank=scored[i-1].rank;else e.rank=rank;rank=i+2;});
+  return{scored,totalPool,totalPoints,pointsScored,playerTotals,playerPoints,fee};
+}
+
 function scoring(throughRound){
   // throughRound: null/undefined = Live (uses ESPN live vs-par, current behavior).
   //               1..4 = historical snapshot through that round (strokes only, no live vs-par).
@@ -904,7 +947,95 @@ function rMastersBoard(){
   return card;
 }
 
+function rCalcuttaLeaderboard(){
+  const isA=S.isAdmin;
+  const {scored,totalPool,totalPoints,pointsScored,playerTotals,playerPoints,fee}=calcuttaScoring();
+  const frag=document.createDocumentFragment();
+  const fmt=n=>'$'+Math.round(n).toLocaleString();
+  // Locked / hide state: if entries aren't locked yet, hide participant allocations from players
+  const locked=S.config.locked||(S.config.deadline&&new Date(S.config.deadline)<new Date());
+  const hidePicks=!isA&&!locked;
+  // Top metrics row
+  if(isA){
+    const m=$('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px',margin:'0 0 16px 0'}});
+    [{l:'Entries',v:S.entries.length},{l:'Pool',v:fmt(totalPool),c:'var(--green)'},{l:'Points scored',v:pointsScored.toFixed(1).replace(/\.0$/,'')+' / '+totalPoints},{l:'$ per point',v:pointsScored>0?fmt(totalPool/totalPoints):'—'}].forEach(x=>{
+      m.append($('div',{className:'metric'},$('div',{className:'lbl2'},x.l),$('div',{className:'val',style:x.c?{color:x.c}:{}},String(x.v))));});
+    frag.append(m);
+  }
+  // Entries leaderboard
+  const card=$('div',{className:'card'});
+  card.append($('h2',{className:'hd'},isA?'Leaderboard':'Standings'));
+  card.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Calcutta payout so far. Updates as points are entered.'));
+  if(!S.entries.length){card.append($('p',{className:'sub',style:{textAlign:'center',padding:'20px'}},'No entries yet.'));frag.append(card);return frag;}
+  const w=$('div',{className:'overflow-x'}),tbl=$('table');
+  const hds=['#','Participant','Allocated','Payout'];
+  tbl.append($('thead',null,$('tr',null,...hds.map((t,i)=>$('th',{className:i===1?'left':''},t)))));
+  const tb=$('tbody');
+  scored.forEach(e=>{
+    const isMe=!isA&&S.playerEmail&&e.email&&e.email.toLowerCase()===S.playerEmail.toLowerCase();
+    const bg=isMe?'#FFF8E1':(e.rank&&e.rank<=3?'var(--lt-green)':'transparent');
+    const row=$('tr',{style:{background:bg}});
+    row.append($('td',{style:{fontWeight:'700'}},String(e.rank||'')));
+    // Participant + allocation breakdown
+    const nt=$('td',{className:'left'});
+    const nameRow=$('div',{style:{fontWeight:'600',display:'flex',alignItems:'center',gap:'6px'}});
+    nameRow.append(document.createTextNode(e.participant+(e.entryNum>1?' — Entry '+e.entryNum:'')));
+    if(isMe)nameRow.append($('span',{className:'badge',style:{background:'var(--gold)',color:'var(--dk-green)',fontSize:'9px'}},'YOU'));
+    nt.append(nameRow);
+    // Show picks (allocations) — the breakdown, sorted highest $ first
+    if(!hidePicks||isMe){
+      const allocs=Object.entries(e.allocations||{}).sort((a,b)=>b[1]-a[1]);
+      const picksLine=$('div',{style:{fontSize:'11px',color:'var(--med)',marginTop:'2px',lineHeight:'1.5'}});
+      allocs.forEach(([p,amt],pi)=>{
+        const pts=playerPoints[p]||0;
+        const ptsStr=pts>0?' • '+pts.toFixed(1).replace(/\.0$/,'')+' pt'+(pts===1?'':'s'):'';
+        const span=$('span',{style:{color:pts>0?'var(--dk)':'var(--med)',fontWeight:pts>0?'600':'400'}},p+' $'+amt+ptsStr);
+        picksLine.appendChild(span);
+        if(pi<allocs.length-1)picksLine.appendChild(document.createTextNode(' · '));
+      });
+      nt.append(picksLine);
+    }
+    row.append(nt);
+    row.append($('td',{style:{fontWeight:'600'}},'$'+e.totalAllocated));
+    row.append($('td',{style:{fontWeight:'700',fontSize:'16px',color:e.payout>0?'var(--green)':'var(--med)'}},pointsScored>0?fmt(e.payout):'—'));
+    tb.append(row);
+  });
+  tbl.append(tb);w.append(tbl);card.append(w);
+  frag.append(card);
+  // Player-by-player ownership grid (fun to see how the crowd bid)
+  if(pointsScored>0||locked){
+    const pCard=$('div',{className:'card',style:{marginTop:'16px'}});
+    pCard.append($('h3',{className:'hd',style:{fontSize:'16px'}},'By player'));
+    pCard.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'What the crowd bid on each player, and how many points they\'ve scored.'));
+    const w2=$('div',{className:'overflow-x'}),tbl2=$('table');
+    tbl2.append($('thead',null,$('tr',null,$('th',{className:'left'},'Player'),$('th',null,'Team'),$('th',null,'Total bid'),$('th',null,'Points'),$('th',null,'$ / point'))));
+    const tb2=$('tbody');
+    const sortedGolfers=[...S.golfers].sort((a,b)=>{
+      const pa=playerPoints[a.name]||0,pb=playerPoints[b.name]||0;
+      if(pa!==pb)return pb-pa;
+      return (playerTotals[b.name]||0)-(playerTotals[a.name]||0);
+    });
+    sortedGolfers.forEach(g=>{
+      const bid=playerTotals[g.name]||0;
+      const pts=playerPoints[g.name]||0;
+      const playerShare=pts>0?(pts/totalPoints)*totalPool:0;
+      const perPt=pts>0&&bid>0?(playerShare/bid):null;
+      const row=$('tr');
+      row.append($('td',{className:'left',style:{fontWeight:'600'}},g.name));
+      row.append($('td',{style:{fontSize:'11px',color:'var(--med)'}},g.team==='US'?'🇺🇸 US':'🌐 Intl'));
+      row.append($('td',null,'$'+bid));
+      row.append($('td',{style:{fontWeight:pts>0?'700':'400',color:pts>0?'var(--green)':'var(--med)'}},pts>0?pts.toFixed(1).replace(/\.0$/,''):'0'));
+      row.append($('td',{style:{fontSize:'12px',color:'var(--med)'}},perPt!=null?'$'+perPt.toFixed(2):'—'));
+      tb2.append(row);
+    });
+    tbl2.append(tb2);w2.append(tbl2);pCard.append(w2);
+    frag.append(pCard);
+  }
+  return frag;
+}
+
 function rLeaderboard(){
+  if(S.config.gameType==='calcutta')return rCalcuttaLeaderboard();
   const isA=S.isAdmin;
   const through=S.lbRound==='live'?null:Number(S.lbRound);
   const {scored:sc,totalPool:tp}=scoring(through);
@@ -991,7 +1122,35 @@ function rLeaderboard(){
   frag.append(card);return frag;
 }
 
+function rCalcuttaScores(){
+  const frag=document.createDocumentFragment();
+  const {totalPoints,pointsScored}=calcuttaScoring();
+  const card=$('div',{className:'card'});
+  card.append($('h2',{className:'hd'},'Enter points'));
+  card.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Enter each player\'s cumulative Presidents Cup points. Ties = 0.5 each. Total: '+pointsScored.toFixed(1).replace(/\.0$/,'')+' / '+totalPoints+' points.'));
+  const buildTeam=(label,teamKey,color)=>{
+    card.append($('div',{style:{background:color,color:'white',padding:'8px 12px',borderRadius:'6px',fontWeight:'700',fontSize:'13px',letterSpacing:'0.5px',margin:'16px 0 8px 0'}},label));
+    const grid=$('div',{style:{display:'grid',gridTemplateColumns:'1fr auto',gap:'6px 12px',alignItems:'center'}});
+    S.golfers.filter(g=>g.team===teamKey).forEach((g,i)=>{
+      const idx=S.golfers.indexOf(g);
+      grid.append($('div',{style:{fontSize:'14px',fontWeight:'500',padding:'6px 0'}},g.name));
+      const inp=$('input',{type:'number',min:'0',step:'0.5',placeholder:'0',value:g.points?String(g.points):'',style:{width:'80px',padding:'6px 8px',borderRadius:'4px',border:'1px solid var(--border)',textAlign:'right',fontSize:'14px'}});
+      inp.addEventListener('change',()=>{S.golfers[idx].points=inp.value===''?0:parseFloat(inp.value);save();R();});
+      grid.append(inp);
+    });
+    card.append(grid);
+  };
+  buildTeam('🇺🇸  U.S. TEAM','US','#B22234');
+  buildTeam('🌐  INTERNATIONAL TEAM','INTL','#003D7C');
+  // Zero-out button
+  const zero=$('button',{className:'btn btn-o',style:{marginTop:'16px',fontSize:'12px'},onClick:()=>{if(!confirm('Reset all points to 0?'))return;S.golfers.forEach(g=>g.points=0);save();R();}},'Reset all points to 0');
+  card.append(zero);
+  frag.append(card);
+  return frag;
+}
+
 function rScores(){
+  if(S.config.gameType==='calcutta')return rCalcuttaScores();
   const frag=document.createDocumentFragment();
   const sc=scoring();
 
