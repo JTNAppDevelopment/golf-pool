@@ -657,21 +657,39 @@ function rPickBestEntryForm(isA){
   const emailI=$('input',{type:'email',placeholder:'Your email',value:iEmail,maxLength:'80'});
   meta.append($('div',null,$('label',{className:'lbl'},'Name'),partI),$('div',null,$('label',{className:'lbl'},'Email'),emailI));
   card.append(meta);
-  // Payment
+  // Payment. Venmo / Zelle buttons select the method AND surface a payment CTA link
+  // once selected (opens the payment site in a new tab; form state preserved).
   const payWrap=$('div',{style:{marginTop:'16px'}});
   payWrap.append($('label',{className:'lbl'},'Payment method'));
   const payBox=$('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap'}});
+  const payLinkArea=$('div',{style:{marginTop:'10px'}});
   let payVal=iPay;
   const payOpts=[];
   if(c.venmoHandle)payOpts.push(['venmo','Venmo']);
   if(c.zelleHandle)payOpts.push(['zelle','Zelle']);
   if(c.acceptCash!==false)payOpts.push(['cash','Cash']);
+  const updatePayLink=(v)=>{
+    payLinkArea.innerHTML='';
+    if(v==='venmo'&&c.venmoHandle){
+      const handle=c.venmoHandle.replace(/^@/,'');
+      const note=(c.name||'Pool')+' entry';
+      const url='https://venmo.com/'+encodeURIComponent(handle)+'?txn=pay&amount='+fee+'&note='+encodeURIComponent(note);
+      payLinkArea.append($('a',{href:url,target:'_blank',rel:'noopener',style:{display:'inline-block',padding:'10px 16px',background:'#3D95CE',color:'white',borderRadius:'6px',textDecoration:'none',fontWeight:'700',fontSize:'14px'}},'Open Venmo — pay @'+handle+' $'+fee+' →'));
+    } else if(v==='zelle'&&c.zelleHandle){
+      const wrap=$('div',{style:{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}});
+      wrap.append($('div',{style:{padding:'10px 14px',background:'#F4E4EE',borderRadius:'6px',fontSize:'13.5px'}},'Zelle to ',$('strong',null,c.zelleHandle),' — $'+fee));
+      wrap.append($('a',{href:'https://www.zellepay.com/',target:'_blank',rel:'noopener',style:{display:'inline-block',padding:'10px 16px',background:'#6D1ED4',color:'white',borderRadius:'6px',textDecoration:'none',fontWeight:'700',fontSize:'14px'}},'Open Zelle →'));
+      payLinkArea.append(wrap);
+    }
+  };
   payOpts.forEach(([v,l])=>{
     const b=$('button',{type:'button',className:'pub-box'+(payVal===v?' on':''),style:{padding:'8px 16px',borderRadius:'6px',border:'2px solid var(--border)',background:'white',cursor:'pointer'}},l);
-    b.addEventListener('click',()=>{payVal=v;Array.from(payBox.children).forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+    b.addEventListener('click',()=>{payVal=v;Array.from(payBox.children).forEach(x=>x.classList.remove('on'));b.classList.add('on');updatePayLink(v);});
     payBox.append(b);
   });
   payWrap.append(payBox);
+  payWrap.append(payLinkArea);
+  if(payVal)updatePayLink(payVal);
   card.append(payWrap);
   frag.append(card);
   // Picks card
