@@ -1131,34 +1131,87 @@ function rCalcuttaLeaderboard(){
   });
   tbl.append(tb);w.append(tbl);card.append(w);
   frag.append(card);
-  // Player-by-player ownership grid (fun to see how the crowd bid)
-  if(pointsScored>0||locked){
-    const pCard=$('div',{className:'card',style:{marginTop:'16px'}});
-    pCard.append($('h3',{className:'hd',style:{fontSize:'16px'}},'By player'));
-    pCard.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'What the crowd bid on each player, and how many points they\'ve scored.'));
-    const w2=$('div',{className:'overflow-x'}),tbl2=$('table');
-    tbl2.append($('thead',null,$('tr',null,$('th',{className:'left'},'Player'),$('th',null,'Team'),$('th',null,'Total bid'),$('th',null,'Points'),$('th',null,'$ / point'))));
-    const tb2=$('tbody');
-    const sortedGolfers=[...S.golfers].sort((a,b)=>{
-      const pa=playerPoints[a.name]||0,pb=playerPoints[b.name]||0;
-      if(pa!==pb)return pb-pa;
-      return (playerTotals[b.name]||0)-(playerTotals[a.name]||0);
+  // "By golfer" market view — always visible, no gate on points/locked. Shows what the
+  // crowd bid on each of the 24 Presidents Cup golfers, how many entrants backed him,
+  // and the implied $/point payout for the current pool.
+  if(S.entries.length>0){
+    // Count of entrants who put non-zero dollars on each golfer
+    const entriesPerGolfer={};
+    S.entries.forEach(e=>{
+      Object.entries(e.allocations||{}).forEach(([n,amt])=>{
+        if((+amt||0)>0)entriesPerGolfer[n]=(entriesPerGolfer[n]||0)+1;
+      });
     });
+    const pCard=$('div',{className:'card',style:{marginTop:'16px'}});
+    pCard.append($('h3',{className:'hd',style:{fontSize:'16px'}},'By golfer'));
+    pCard.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Total dollars bid on each golfer, number of entrants who backed him, and the implied payout per Cup point.'));
+    const w2=$('div',{className:'overflow-x'}),tbl2=$('table');
+    tbl2.append($('thead',null,$('tr',null,$('th',{className:'left'},'Golfer'),$('th',null,'Team'),$('th',null,'Entrants'),$('th',null,'Total bid'),$('th',null,'Points'),$('th',null,'$ / point'))));
+    const tb2=$('tbody');
+    // Sort by total $ bid descending — market ranking of who the crowd likes.
+    const sortedGolfers=[...S.golfers].sort((a,b)=>(playerTotals[b.name]||0)-(playerTotals[a.name]||0));
     sortedGolfers.forEach(g=>{
       const bid=playerTotals[g.name]||0;
+      const nEntrants=entriesPerGolfer[g.name]||0;
       const pts=playerPoints[g.name]||0;
-      const playerShare=pts>0?(pts/totalPoints)*totalPool:0;
-      const perPt=pts>0&&bid>0?(playerShare/bid):null;
+      const perPt=bid>0?((1/totalPoints)*totalPool/bid):null;
       const row=$('tr');
       row.append($('td',{className:'left',style:{fontWeight:'600'}},g.name));
       row.append($('td',{style:{fontSize:'11px',color:'var(--med)'}},g.team==='US'?'🇺🇸 US':'🌐 Intl'));
-      row.append($('td',null,'$'+bid));
+      row.append($('td',null,String(nEntrants)));
+      row.append($('td',{style:{fontWeight:'600'}},'$'+bid));
       row.append($('td',{style:{fontWeight:pts>0?'700':'400',color:pts>0?'var(--green)':'var(--med)'}},pts>0?pts.toFixed(1).replace(/\.0$/,''):'0'));
       row.append($('td',{style:{fontSize:'12px',color:'var(--med)'}},perPt!=null?'$'+perPt.toFixed(2):'—'));
       tb2.append(row);
     });
     tbl2.append(tb2);w2.append(tbl2);pCard.append(w2);
     frag.append(pCard);
+    // Worked example — highest and lowest non-zero total-bid golfers.
+    const bidNonZero=sortedGolfers.filter(g=>(playerTotals[g.name]||0)>0);
+    if(bidNonZero.length>=2){
+      const hi=bidNonZero[0];
+      const lo=bidNonZero[bidNonZero.length-1];
+      const hiBid=playerTotals[hi.name],loBid=playerTotals[lo.name];
+      const hiN=entriesPerGolfer[hi.name]||0,loN=entriesPerGolfer[lo.name]||0;
+      const hiAvg=hiN>0?hiBid/hiN:0,loAvg=loN>0?loBid/loN:0;
+      const share3=(3/totalPoints)*totalPool;
+      const hiCut=hiBid>0?(hiAvg/hiBid)*share3:0;
+      const loCut=loBid>0?(loAvg/loBid)*share3:0;
+      const ratio=(hiCut>0&&loCut>0)?(loCut/hiCut):0;
+      const exCard=$('div',{className:'card',style:{marginTop:'16px',background:'#FFFAF0',borderLeft:'5px solid #F0B323'}});
+      exCard.append($('h3',{className:'hd',style:{fontSize:'16px'}},'Worked example — favorite vs. sleeper'));
+      exCard.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Both golfers scoring 3 points, at the current pool.'));
+      const mkRow=(label,g,bid,n,avg,cut,color)=>{
+        const box=$('div',{style:{padding:'12px 16px',background:'white',border:'1px solid var(--border)',borderRadius:'8px',margin:'8px 0'}});
+        box.append($('div',{style:{fontSize:'12px',color:color||'var(--med)',fontWeight:'700',letterSpacing:'0.5px',marginBottom:'4px'}},label));
+        box.append($('div',{style:{fontWeight:'700',fontSize:'16px'}},g.name+' ('+(g.team==='US'?'🇺🇸 US':'🌐 Intl')+')'));
+        box.append($('div',{style:{fontSize:'13px',color:'var(--med)',marginTop:'2px'}},'Total bid: $'+bid+' across '+n+' entrant'+(n===1?'':'s')+' · Average bid: $'+avg.toFixed(2).replace(/\.00$/,'')));
+        box.append($('div',{style:{fontSize:'13px',color:'var(--dk)',marginTop:'4px'}},'3-pt pool share = (3 ÷ '+totalPoints+') × $'+totalPool.toLocaleString()+' = ',$('strong',null,'$'+Math.round(share3).toLocaleString())));
+        box.append($('div',{style:{fontSize:'13px',color:'var(--dk)',marginTop:'2px'}},'An average bid ($'+avg.toFixed(2).replace(/\.00$/,'')+') earns ($'+avg.toFixed(2).replace(/\.00$/,'')+' ÷ $'+bid+') × $'+Math.round(share3).toLocaleString()+' = ',$('strong',{style:{color:'var(--green)'}},'$'+cut.toFixed(2).replace(/\.00$/,''))));
+        return box;
+      };
+      exCard.append(mkRow('MOST-BID GOLFER',hi,hiBid,hiN,hiAvg,hiCut,'#B22234'));
+      exCard.append(mkRow('LEAST-BID GOLFER',lo,loBid,loN,loAvg,loCut,'#003D7C'));
+      if(ratio>1.5){
+        exCard.append($('div',{style:{padding:'10px 16px',background:'var(--lt-green)',borderRadius:'6px',marginTop:'8px',fontSize:'13.5px',fontWeight:'600',color:'var(--green)'}},'Same 3 points, same $'+Math.round(share3).toLocaleString()+' pool share — but the sleeper\'s average bidder gets '+ratio.toFixed(1).replace(/\.0$/,'')+'× more than the favorite\'s.'));
+      }
+      frag.append(exCard);
+    }
+    // Commissioner-only: unclaimed pool share (golfers who scored points but nobody bid on).
+    if(isA){
+      let unclaimed=0;
+      S.golfers.forEach(g=>{
+        const pts=playerPoints[g.name]||0;
+        const bid=playerTotals[g.name]||0;
+        if(pts>0&&bid<=0)unclaimed+=(pts/totalPoints)*totalPool;
+      });
+      if(unclaimed>0){
+        frag.append($('div',{className:'card',style:{marginTop:'16px',background:'#FFF8E1',borderLeft:'5px solid #D4A017'}},
+          $('h3',{className:'hd',style:{fontSize:'15px',color:'#B8860B'}},'Unclaimed pool share'),
+          $('p',{className:'sub',style:{margin:'6px 0 4px 0'}},'$'+Math.round(unclaimed).toLocaleString()+' from golfers who scored but had no bidders. Not distributed by the app.')
+        ));
+      }
+    }
   }
   return frag;
 }
@@ -2582,9 +2635,10 @@ function R(){
   if(!S.loaded){app.append($('div',{style:{textAlign:'center',padding:'80px',color:'var(--med)'}},'Loading...'));return;}
   if(S.mode===null){app.append($('div',{className:'page'},rLanding()));return;}
   if(S.mode==='admin'&&!S.isAdmin){app.append($('div',{className:'page'},rPin()));return;}
-  // Player sign-in is optional: only forced on views that filter to 'my' data (leaderboard/enter/whatif).
-  // Rules is public and needs no personalization, so a mobile visitor tapping Player lands on Rules directly.
-  if(S.mode==='player'&&!S.playerEmail&&S.view!=='rules'){app.append($('div',{className:'page'},rPlayerSignin()));return;}
+  // Player sign-in is optional across the board: rPlayerSignin only runs if a returning
+  // user with saved email hits it explicitly. Otherwise the entry form captures email
+  // on submit — no reason to prompt twice.
+  // if(S.mode==='player'&&!S.playerEmail){app.append($('div',{className:'page'},rPlayerSignin()));return;}
   app.append(rTopbar());const page=$('div',{className:'page'});
   if(S.config.name){
     const subDiv=$('div',{style:{textAlign:'center',margin:'-12px 0 16px'}});
