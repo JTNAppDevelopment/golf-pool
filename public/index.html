@@ -2294,12 +2294,12 @@ function getPickBestRulesHTML(c,payStr,dl){
     '<div style="margin:22px 0;padding:20px;background:'+ltBg+';border-radius:10px;border-left:5px solid '+primary+';color:#222;line-height:1.7;">'+
       '<div style="font-size:17px;font-weight:700;color:'+primary+';margin-bottom:10px;">How it works</div>'+
       '<ol style="margin:0;padding-left:22px;font-size:14.5px;">'+
-        '<li><strong>Enter $'+fee+'.</strong> One flat entry fee per entrant. Pay via '+payStr+'.</li>'+
+        '<li><strong>Enter $'+fee+'.</strong> One flat entry fee per entrant.</li>'+
         '<li><strong>Pick '+nPicks+' Presidents Cup golfers</strong> from the 24 competitors — any team, any mix, no duplicates. Order does not matter.</li>'+
-        '<li><strong>Your score = sum of your top '+nCount+' scoring picks.</strong> The '+(nPicks-nCount)+' lowest-scoring picks get dropped, so a captain\'s decision to sit a golfer or a bad session won\'t crush you.</li>'+
+        '<li><strong>Your score = total Cup points won by your top '+nCount+' scoring picks.</strong> Same idea as the best-'+nCount+'-of-'+nPicks+' stroke-play format, but points-won instead of strokes. The '+(nPicks-nCount)+' lowest-scoring picks drop off, so a captain\'s decision to sit a golfer or a bad session won\'t crush you.</li>'+
         '<li><strong>Highest total score wins.</strong> A Presidents Cup point (from any of the 5 sessions) counts as 1 pt; ties in a match yield 0.5 to each golfer.</li>'+
         '<li><strong>Prize splits:</strong> after 5% goes to the bar staff, the pool splits <strong>'+splits[0]+'% / '+splits[1]+'% / '+splits[2]+'%</strong> to 1st / 2nd / 3rd place.</li>'+
-        '<li><strong>Tiebreaker:</strong> predict the U.S. Team\'s total points (0–30). Closest guess wins any tie — over or under both count. Rare tie-through-all: split evenly.</li>'+
+        '<li><strong>Tiebreaker:</strong> predict the U.S. Team\'s total points (0–30). Closest guess wins any tie — over or under. Rare tie-through-all: split evenly.</li>'+
       '</ol>'+
     '</div>'+
     '<div style="margin:22px 0;padding:20px;background:#FFFAF0;border-radius:10px;border-left:5px solid '+accent+';color:#222;line-height:1.7;">'+
