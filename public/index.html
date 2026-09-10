@@ -671,13 +671,25 @@ function rPickBestEntryForm(isA){
   const updatePayLink=(v)=>{
     payLinkArea.innerHTML='';
     if(v==='venmo'&&c.venmoHandle){
-      // Strip leading @ and any accidental venmo.com prefix from the configured handle.
-      const handle=c.venmoHandle.replace(/^https?:\/\/(www\.)?venmo\.com\//i,'').replace(/^@/,'').split(/[\/?#]/)[0];
+      // Accept either a plain @handle or a full venmo.com profile/QR URL in Setup.
+      // Full-URL case: pass the whole URL through — Venmo's redirect logic resolves the
+      // embedded user_id to the right account. Plain-handle case: build the modern
+      // recipients-as-query-param payment URL, which Venmo's payment-link endpoint expects.
+      const raw=c.venmoHandle.trim();
+      const isFullUrl=/^https?:\/\/(www\.)?venmo\.com\//i.test(raw);
       const note=(c.name||'Pool')+' entry';
-      // Venmo's current canonical payment URL — recipients as a query param, not a path segment.
-      // The old venmo.com/{handle} path stopped resolving to a paying screen.
-      const url='https://venmo.com/?txn=pay&audience=private&recipients='+encodeURIComponent(handle)+'&amount='+fee+'&note='+encodeURIComponent(note);
-      payLinkArea.append($('a',{href:url,target:'_blank',rel:'noopener',style:{display:'inline-block',padding:'10px 16px',background:'#3D95CE',color:'white',borderRadius:'6px',textDecoration:'none',fontWeight:'700',fontSize:'14px'}},'Open Venmo — pay @'+handle+' $'+fee+' →'));
+      let url,label;
+      if(isFullUrl){
+        // Reuse the pre-baked profile/QR URL; append or override the payment query params.
+        const sep=raw.indexOf('?')>=0?'&':'?';
+        url=raw+sep+'txn=pay&amount='+fee+'&note='+encodeURIComponent(note);
+        label='Open Venmo — pay $'+fee+' →';
+      } else {
+        const handle=raw.replace(/^@/,'');
+        url='https://venmo.com/?txn=pay&audience=private&recipients='+encodeURIComponent(handle)+'&amount='+fee+'&note='+encodeURIComponent(note);
+        label='Open Venmo — pay @'+handle+' $'+fee+' →';
+      }
+      payLinkArea.append($('a',{href:url,target:'_blank',rel:'noopener',style:{display:'inline-block',padding:'10px 16px',background:'#3D95CE',color:'white',borderRadius:'6px',textDecoration:'none',fontWeight:'700',fontSize:'14px'}},label));
     } else if(v==='zelle'&&c.zelleHandle){
       const wrap=$('div',{style:{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}});
       wrap.append($('div',{style:{padding:'10px 14px',background:'#F4E4EE',borderRadius:'6px',fontSize:'13.5px'}},'Zelle to ',$('strong',null,c.zelleHandle),' — $'+fee));
