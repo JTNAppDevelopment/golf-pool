@@ -86,7 +86,7 @@ const DEF={name:"2025 Masters",course:"Augusta National Golf Club",par:72,numPic
 // 2026 Presidents Cup field at Medinah, Sept 22-27. Names as ESPN/PGA Tour display them.
 // Presidents Cup has 5 scoring sessions; max 1 pt per golfer per session (2 pts possible
 // on Saturday since he can play both formats — modeled as two separate sessions).
-const CALCUTTA_SESSIONS=['Thu 4B','Fri FS','Sat 4B','Sat FS','Sun'];
+const CALCUTTA_SESSIONS=['Thu','Fri','Sat 4B','Sat FS','Sun'];
 const PRESIDENTS_CUP_FIELD=[
   {name:'Scottie Scheffler',team:'US'},
   {name:'Cameron Young',team:'US'},
@@ -1984,12 +1984,24 @@ function getCalcuttaRulesHTML(c,payStr,dl){
         'Popular players get "bid up" &mdash; when a lot of entrants put money on the same superstar, everyone\'s slice of that player\'s payout gets smaller. Sleeper picks stay cheap: if you\'re the only one betting on a role player and he wins 3 points, your dollars-per-point payout can dwarf what the crowd earned on Scheffler.'+
         '<br><br>'+
         '<strong>Example</strong> (50 entrants &times; $'+fee+' = $'+(50*fee).toLocaleString()+' pool):'+
-        '<ul style="margin:8px 0 0 0;padding-left:22px;">'+
-          '<li>Scheffler scores 4 pts. His pool share = (4&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(4*50*fee/30).toLocaleString()+'</strong>.</li>'+
-          '<li>Gotterup (the sleeper) scores 3 pts. His pool share = (3&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(3*50*fee/30).toLocaleString()+'</strong>.</li>'+
-          '<li>Total dollars bid on Scheffler across all entrants: $1,000.<br>You put $25 on him. Your cut = ($25 &divide; $1,000) &times; $'+Math.round(4*50*fee/30).toLocaleString()+' = <strong>$'+Math.round((25/1000)*4*50*fee/30).toLocaleString()+'</strong>.</li>'+
-          '<li>Total dollars bid on Gotterup across all entrants: $100.<br>You put $25 on him. Your cut = ($25 &divide; $100) &times; $'+Math.round(3*50*fee/30).toLocaleString()+' = <strong>$'+Math.round((25/100)*3*50*fee/30).toLocaleString()+'</strong>.</li>'+
-        '</ul>'+
+        '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:10px 0 0 0;">'+
+          '<tr>'+
+            '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
+              '<div style="font-weight:700;color:#B22234;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">FAVORITE</div>'+
+              '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Scheffler scores 4 pts</div>'+
+              '<div>Pool share = (4&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(4*50*fee/30).toLocaleString()+'</strong></div>'+
+              '<div style="margin-top:6px;">Total bid on him: $1,000. You put $25.</div>'+
+              '<div>Your cut = ($25 &divide; $1,000) &times; $'+Math.round(4*50*fee/30).toLocaleString()+' = <strong style="color:#006747;">$'+Math.round((25/1000)*4*50*fee/30).toLocaleString()+'</strong></div>'+
+            '</td>'+
+            '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
+              '<div style="font-weight:700;color:#003D7C;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">SLEEPER</div>'+
+              '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Bezuidenhout scores 3 pts</div>'+
+              '<div>Pool share = (3&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(3*50*fee/30).toLocaleString()+'</strong></div>'+
+              '<div style="margin-top:6px;">Total bid on him: $100. You put $25.</div>'+
+              '<div>Your cut = ($25 &divide; $100) &times; $'+Math.round(3*50*fee/30).toLocaleString()+' = <strong style="color:#006747;">$'+Math.round((25/100)*3*50*fee/30).toLocaleString()+'</strong></div>'+
+            '</td>'+
+          '</tr>'+
+        '</table>'+
         '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed #ccc;font-size:14px;">'+
           '<strong>Combined payout from these two picks: $'+(Math.round((25/1000)*4*50*fee/30)+Math.round((25/100)*3*50*fee/30)).toLocaleString()+'.</strong> The remaining $'+(fee-50)+' of your entry sits with other players; whatever points they score adds to your total.'+
         '</div>'+
