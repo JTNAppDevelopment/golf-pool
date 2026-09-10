@@ -1983,28 +1983,38 @@ function getCalcuttaRulesHTML(c,payStr,dl){
       '<div style="font-size:14.5px;">'+
         'Popular players get "bid up" &mdash; when a lot of entrants put money on the same superstar, everyone\'s slice of that player\'s payout gets smaller. Sleeper picks stay cheap: if you\'re the only one betting on a role player and he wins 3 points, your dollars-per-point payout can dwarf what the crowd earned on Scheffler.'+
         '<br><br>'+
-        '<strong>Example</strong> (50 entrants &times; $'+fee+' = $'+(50*fee).toLocaleString()+' pool):'+
-        '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:10px 0 0 0;">'+
-          '<tr>'+
-            '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
-              '<div style="font-weight:700;color:#B22234;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">FAVORITE</div>'+
-              '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Scheffler scores 4 pts</div>'+
-              '<div>Pool share = (4&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(4*50*fee/30).toLocaleString()+'</strong></div>'+
-              '<div style="margin-top:6px;">Total bid on him: $1,000. You put $25.</div>'+
-              '<div>Your cut = ($25 &divide; $1,000) &times; $'+Math.round(4*50*fee/30).toLocaleString()+' = <strong style="color:#006747;">$'+Math.round((25/1000)*4*50*fee/30).toLocaleString()+'</strong></div>'+
-            '</td>'+
-            '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
-              '<div style="font-weight:700;color:#003D7C;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">SLEEPER</div>'+
-              '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Bezuidenhout scores 3 pts</div>'+
-              '<div>Pool share = (3&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(3*50*fee/30).toLocaleString()+'</strong></div>'+
-              '<div style="margin-top:6px;">Total bid on him: $100. You put $25.</div>'+
-              '<div>Your cut = ($25 &divide; $100) &times; $'+Math.round(3*50*fee/30).toLocaleString()+' = <strong style="color:#006747;">$'+Math.round((25/100)*3*50*fee/30).toLocaleString()+'</strong></div>'+
-            '</td>'+
-          '</tr>'+
-        '</table>'+
-        '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed #ccc;font-size:14px;">'+
-          '<strong>Combined payout from these two picks: $'+(Math.round((25/1000)*4*50*fee/30)+Math.round((25/100)*3*50*fee/30)).toLocaleString()+'.</strong> The remaining $'+(fee-50)+' of your entry sits with other players; whatever points they score adds to your total.'+
-        '</div>'+
+        (function(){
+          // Money formatter that keeps cents when needed and hides trailing .00 for whole dollars.
+          const money=n=>{const s=n.toFixed(2);return s.replace(/\.00$/,'');};
+          const pool=50*fee;
+          const shareFav=(4/30)*pool;
+          const shareSlp=(3/30)*pool;
+          const cutFav=(25/1000)*shareFav;
+          const cutSlp=(25/100)*shareSlp;
+          const combined=cutFav+cutSlp;
+          return '<strong>Example</strong> (50 entrants &times; $'+fee+' = $'+pool.toLocaleString()+' pool):'+
+          '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:10px 0 0 0;">'+
+            '<tr>'+
+              '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
+                '<div style="font-weight:700;color:#B22234;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">FAVORITE</div>'+
+                '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Scheffler scores 4 pts</div>'+
+                '<div>Pool share = (4&divide;30) &times; $'+pool.toLocaleString()+' = <strong>$'+money(shareFav)+'</strong></div>'+
+                '<div style="margin-top:6px;">Total bid on him: $1,000. You put $25.</div>'+
+                '<div>Your cut = ($25 &divide; $1,000) &times; $'+money(shareFav)+' = <strong style="color:#006747;">$'+money(cutFav)+'</strong></div>'+
+              '</td>'+
+              '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
+                '<div style="font-weight:700;color:#003D7C;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">SLEEPER</div>'+
+                '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Bezuidenhout scores 3 pts</div>'+
+                '<div>Pool share = (3&divide;30) &times; $'+pool.toLocaleString()+' = <strong>$'+money(shareSlp)+'</strong></div>'+
+                '<div style="margin-top:6px;">Total bid on him: $100. You put $25.</div>'+
+                '<div>Your cut = ($25 &divide; $100) &times; $'+money(shareSlp)+' = <strong style="color:#006747;">$'+money(cutSlp)+'</strong></div>'+
+              '</td>'+
+            '</tr>'+
+          '</table>'+
+          '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed #ccc;font-size:14px;">'+
+            '<strong>Combined payout from these two picks: $'+money(combined)+'.</strong> The remaining $'+(fee-50)+' of your entry sits with other players; whatever points they score adds to your total.'+
+          '</div>';
+        })()+
       '</div>'+
     '</div>'+
     // Bottom section becomes a two-column grid in print: Side Bet + Deadline stacked in
