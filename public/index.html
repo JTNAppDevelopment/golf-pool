@@ -1786,7 +1786,7 @@ function getCalcuttaRulesHTML(c,payStr,dl){
     '<style>'+
       '.qr-print-column{display:none;}'+
       '@media print{'+
-        '.bg-grid{display:grid;grid-template-columns:1fr 220px;gap:0 20px;align-items:end;}'+
+        '.bg-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:end;}'+
         '.qr-print-column{display:flex!important;grid-column:2;grid-row:1/span 2;flex-direction:column;justify-content:flex-end;align-items:center;}'+
       '}'+
     '</style>'+
@@ -1826,7 +1826,7 @@ function printRules(){
   w.document.write('body{margin:0;padding:12px 16px;font-family:Georgia,serif;}');
   w.document.write('.print-hide{display:none;}');
   w.document.write('#qr-print{display:flex;justify-content:center;margin:12px 0 6px 0;}');
-  w.document.write('@media print{body{padding:4px 8px;}@page{margin:0.25in;}.print-hide{display:none!important;}}');
+  w.document.write('@media print{body{padding:16px 24px;}@page{margin:0.55in 0.6in 0.25in 0.6in;}.print-hide{display:none!important;}}');
   w.document.write('</style></head><body>');
   let h=getRulesHTML();
   h=h.replace(/<br><br><strong>During the tournament:<\/strong>[^<]*<\/div>/,'</div>').replace(/width="200" height="55"/,'width="150" height="42"');
@@ -1836,7 +1836,7 @@ function printRules(){
   // QR generation. Browser blocks on the CDN library <script> before running the inline script.
   const appUrl=(S.config.appUrl||'https://best4.golf').replace(/^(?!https?:\/\/)/,'https://');
   w.document.write('<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></scr'+'ipt>');
-  w.document.write('<scr'+'ipt>var t=document.getElementById("qr-print");if(t)new QRCode(t,{text:"'+appUrl+'",width:200,height:200,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},500);</scr'+'ipt>');
+  w.document.write('<scr'+'ipt>var t=document.getElementById("qr-print");if(t)new QRCode(t,{text:"'+appUrl+'",width:260,height:260,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},500);</scr'+'ipt>');
   w.document.write('</body></html>');
   w.document.close();
 }
