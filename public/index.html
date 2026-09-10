@@ -1767,11 +1767,12 @@ function getCalcuttaRulesHTML(c,payStr,dl){
         '<strong>Example</strong> (50 entrants &times; $'+fee+' = $'+(50*fee).toLocaleString()+' pool):'+
         '<ul style="margin:8px 0 0 0;padding-left:22px;">'+
           '<li>Scheffler scores 4 pts. His pool share = (4&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(4*50*fee/30).toLocaleString()+'</strong>.</li>'+
-          '<li>Total dollars bid on Scheffler across all entrants: $1,000. You put $25 on him. Your cut = ($25 &divide; $1,000) &times; $'+Math.round(4*50*fee/30).toLocaleString()+' = <strong>$'+Math.round((25/1000)*4*50*fee/30).toLocaleString()+'</strong>.</li>'+
-          '<li>You also put $25 on a sleeper who scored 3 pts. Only $100 total was bid on him. Your cut = ($25 &divide; $100) &times; ((3&divide;30) &times; $'+(50*fee).toLocaleString()+') = <strong>$'+Math.round((25/100)*(3/30)*50*fee).toLocaleString()+'</strong>.</li>'+
+          '<li>Gotterup (the sleeper) scores 3 pts. His pool share = (3&divide;30) &times; $'+(50*fee).toLocaleString()+' = <strong>$'+Math.round(3*50*fee/30).toLocaleString()+'</strong>.</li>'+
+          '<li>Total dollars bid on Scheffler across all entrants: $1,000.<br>You put $25 on him. Your cut = ($25 &divide; $1,000) &times; $'+Math.round(4*50*fee/30).toLocaleString()+' = <strong>$'+Math.round((25/1000)*4*50*fee/30).toLocaleString()+'</strong>.</li>'+
+          '<li>Total dollars bid on Gotterup across all entrants: $100.<br>You put $25 on him. Your cut = ($25 &divide; $100) &times; $'+Math.round(3*50*fee/30).toLocaleString()+' = <strong>$'+Math.round((25/100)*3*50*fee/30).toLocaleString()+'</strong>.</li>'+
         '</ul>'+
         '<div style="margin-top:12px;padding-top:12px;border-top:1px dashed #ccc;font-size:14px;">'+
-          '<strong>Combined payout from these two picks: $'+(Math.round((25/1000)*4*50*fee/30)+Math.round((25/100)*(3/30)*50*fee)).toLocaleString()+'.</strong> The remaining $'+(fee-50)+' of your entry sits with other players; whatever points they score adds to your total.'+
+          '<strong>Combined payout from these two picks: $'+(Math.round((25/1000)*4*50*fee/30)+Math.round((25/100)*3*50*fee/30)).toLocaleString()+'.</strong> The remaining $'+(fee-50)+' of your entry sits with other players; whatever points they score adds to your total.'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -1781,7 +1782,7 @@ function getCalcuttaRulesHTML(c,payStr,dl){
         'Add <strong>$'+((c.pickTeamFee|0)||10)+'</strong> on top of your $'+fee+' entry to pick which team wins the Cup &mdash; U.S. or International. All correct pickers split the side-bet pool equally. This is a bolt-on to your Calcutta entry, not a stand-alone bet.'+
       '</div>'+
     '</div>'+
-    '<div style="margin:22px 0;padding:20px;background:'+ltBg+';border-radius:10px;color:#222;line-height:1.7;">'+
+    '<div class="print-hide" style="margin:22px 0;padding:20px;background:'+ltBg+';border-radius:10px;color:#222;line-height:1.7;">'+
       '<div style="font-size:17px;font-weight:700;color:'+primary+';margin-bottom:10px;">The 24 players</div>'+
       '<div style="font-size:13.5px;">'+
         '<strong style="color:#B22234;">&#127482;&#127480; U.S. Team (Captain Snedeker):</strong> Scottie Scheffler, Cameron Young, Wyndham Clark, Sam Burns, Russell Henley, Collin Morikawa, Jacob Bridgeman, Patrick Cantlay, Chris Gotterup, Jackson Koivun, Xander Schauffele, Justin Thomas.'+
@@ -1802,11 +1803,13 @@ function printRules(){
   const w=window.open('','_blank','width=700,height=900');
   w.document.write('<!DOCTYPE html><html><head><title>Pool Rules</title><style>');
   w.document.write('body{margin:0;padding:12px 16px;font-family:Georgia,serif;}');
-  w.document.write('@media print{body{padding:4px 8px;}@page{margin:0.25in;}}');
+  w.document.write('.print-hide{display:none;}');
+  w.document.write('@media print{body{padding:4px 8px;}@page{margin:0.25in;}.print-hide{display:none!important;}}');
   w.document.write('</style></head><body>');
   let h=getRulesHTML();
   h=h.replace(/<br><br><strong>During the tournament:<\/strong>[^<]*<\/div>/,'</div>').replace(/width="200" height="55"/,'width="150" height="42"');
-  h=h.replace(/margin:20px 0/g,'margin:6px 0').replace(/margin:16px 0/g,'margin:5px 0').replace(/margin:10px 0/g,'margin:4px 0').replace(/padding:16px 20px/g,'padding:8px 12px').replace(/padding:16px;border/g,'padding:8px 12px;border').replace(/padding:10px 16px/g,'padding:5px 10px').replace(/margin-bottom:20px/g,'margin-bottom:6px').replace(/margin-bottom:8px/g,'margin-bottom:3px').replace(/margin:0 0 20px/g,'margin:0 0 6px').replace(/margin:0 0 2px/g,'margin:0').replace(/line-height:1\.8/g,'line-height:1.3').replace(/line-height:1\.7/g,'line-height:1.3').replace(/font-size:28px/g,'font-size:20px').replace(/font-size:20px/g,'font-size:16px').replace(/font-size:17px/g,'font-size:13px').replace(/font-size:16px/g,'font-size:12px').replace(/font-size:15px/g,'font-size:12px').replace(/font-size:14px/g,'font-size:11px').replace(/font-size:13px/g,'font-size:11px').replace(/padding:16px 0/g,'padding:8px 0').replace(/gap:4px 16px/g,'gap:2px 12px').replace(/margin-top:16px;font-size/g,'margin-top:6px;font-size');
+  // Cover both stroke-play and Calcutta padding/margin/font-size values in one pass.
+  h=h.replace(/margin:22px 0/g,'margin:4px 0').replace(/margin:20px 0/g,'margin:6px 0').replace(/margin:16px 0/g,'margin:5px 0').replace(/margin:10px 0/g,'margin:4px 0').replace(/padding:22px/g,'padding:8px 12px').replace(/padding:20px/g,'padding:8px 12px').replace(/padding:16px 20px/g,'padding:8px 12px').replace(/padding:16px;border/g,'padding:8px 12px;border').replace(/padding:12px 16px/g,'padding:5px 10px').replace(/padding:10px 16px/g,'padding:5px 10px').replace(/margin-bottom:20px/g,'margin-bottom:6px').replace(/margin-bottom:10px/g,'margin-bottom:3px').replace(/margin-bottom:8px/g,'margin-bottom:3px').replace(/margin:0 0 20px/g,'margin:0 0 6px').replace(/margin:0 0 2px/g,'margin:0').replace(/line-height:1\.8/g,'line-height:1.3').replace(/line-height:1\.7/g,'line-height:1.3').replace(/font-size:28px/g,'font-size:20px').replace(/font-size:26px/g,'font-size:19px').replace(/font-size:20px/g,'font-size:16px').replace(/font-size:17px/g,'font-size:13px').replace(/font-size:16px/g,'font-size:12px').replace(/font-size:15px/g,'font-size:12px').replace(/font-size:14\.5px/g,'font-size:11px').replace(/font-size:14px/g,'font-size:11px').replace(/font-size:13\.5px/g,'font-size:11px').replace(/font-size:13px/g,'font-size:11px').replace(/padding:16px 0/g,'padding:8px 0').replace(/gap:4px 16px/g,'gap:2px 12px').replace(/margin-top:16px;font-size/g,'margin-top:6px;font-size').replace(/margin-top:12px;padding-top:12px/g,'margin-top:6px;padding-top:6px');
   w.document.write(h);
   w.document.write('</body></html>');
   w.document.close();
