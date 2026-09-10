@@ -1519,7 +1519,7 @@ function printQRCard(){
   w.document.write('<div class="qr-wrap" id="qr"></div>');
   if(S.config.gameType==='calcutta'){
     const tbf=(S.config.pickTeamFee|0)||10;
-    w.document.write('<div class="instructions">Scan to enter the pool &rarr; tap <strong>Player</strong><br>$'+S.config.mainFee+' per entry &bull; Spread across 24 players<br>Payout by points earned</div>');
+    w.document.write('<div class="instructions">Scan to enter the pool &rarr; tap <strong>Player</strong><br>$'+S.config.mainFee+' per entry &bull; Spread across 24 players<br>Payout by points earned<br><em style="font-size:12px;color:#888;">(See Rules)</em></div>');
     w.document.write('<div class="tagline">Good luck!</div>');
     w.document.write('<div class="gold">Optional $'+tbf+' side bet: pick the winning team</div>');
   } else {
