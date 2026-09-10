@@ -358,7 +358,7 @@ function rTopbar(){
   // Hide stroke-play-only tabs when the pool is running Calcutta mode.
   const isCalc=S.config.gameType==='calcutta';
   const tabs=S.isAdmin
-    ?(isCalc?['setup','golfers','entries','scores','leaderboard','announce','archive']:['setup','golfers','entries','scores','leaderboard','payouts','announce','archive'])
+    ?(isCalc?['setup','golfers','entries','scores','leaderboard','tally','announce','archive']:['setup','golfers','entries','scores','leaderboard','payouts','announce','archive'])
     :(isCalc?['leaderboard','enter','rules']:['leaderboard','enter','whatif','rules']);
   const bar=$('div',{className:'topbar',style:{position:'relative'}});
   bar.append($('img',{src:CCC_LOGO,style:{position:'absolute',top:'50%',right:'16px',transform:'translateY(-50%)',width:'52px',height:'52px',objectFit:'contain',opacity:'0.85'}}));
@@ -1057,6 +1057,119 @@ function rMastersBoard(){
   }
   tbl.append(tb);wrap.append(tbl);card.append(wrap);
   return card;
+}
+
+// Build a shareable HTML tally of the current Calcutta pool. Used by rCalcuttaTally
+// (Copy HTML button) and by the Announce tab's Scoring-basis text summary generator.
+function buildCalcuttaTallyHTML(){
+  const s=calcuttaScoring();
+  const {totalPool,totalPoints,pointsScored,playerTotals,playerPoints,fee,pickTeamFee,ptwEntries,ptwPool}=s;
+  const cfg=S.config;
+  const entriesPerGolfer={};
+  S.entries.forEach(e=>{Object.entries(e.allocations||{}).forEach(([n,amt])=>{if((+amt||0)>0)entriesPerGolfer[n]=(entriesPerGolfer[n]||0)+1;});});
+  const sortedGolfers=[...S.golfers].sort((a,b)=>(playerTotals[b.name]||0)-(playerTotals[a.name]||0));
+  const bidNonZero=sortedGolfers.filter(g=>(playerTotals[g.name]||0)>0);
+  const perPoint=totalPool/totalPoints;
+  let h='<div style="font-family:Georgia,serif;max-width:720px;margin:0 auto;color:#222;">';
+  h+='<h2 style="color:#003D7C;margin:0 0 4px 0;">'+cfg.name+' — Scoring Basis</h2>';
+  h+='<p style="color:#666;margin:0 0 12px 0;">'+cfg.course+'</p>';
+  h+='<div style="padding:14px 16px;background:#F5F7FA;border-radius:8px;margin:12px 0;">';
+  h+='<div style="margin:0 0 6px 0;"><strong>Entries:</strong> '+S.entries.length+'</div>';
+  h+='<div style="margin:0 0 6px 0;"><strong>Total pool:</strong> $'+totalPool.toLocaleString()+' ('+S.entries.length+' × $'+fee+')</div>';
+  h+='<div style="margin:0;"><strong>Each Cup point =</strong> $'+totalPool.toLocaleString()+' ÷ '+totalPoints+' = <strong>$'+Math.round(perPoint).toLocaleString()+'</strong></div>';
+  if(ptwEntries.length>0)h+='<div style="margin:6px 0 0 0;"><strong>Team-bet side pool:</strong> $'+ptwPool.toLocaleString()+' ('+ptwEntries.length+' entrants × $'+pickTeamFee+')</div>';
+  h+='</div>';
+  h+='<h3 style="color:#003D7C;margin:16px 0 8px 0;">By golfer</h3>';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+  h+='<thead><tr style="background:#003D7C;color:white;"><th style="padding:6px 8px;text-align:left;">Golfer</th><th style="padding:6px 8px;">Team</th><th style="padding:6px 8px;">Entrants</th><th style="padding:6px 8px;">Total bid</th><th style="padding:6px 8px;">$/point</th></tr></thead><tbody>';
+  sortedGolfers.forEach((g,i)=>{
+    const bid=playerTotals[g.name]||0;
+    const n=entriesPerGolfer[g.name]||0;
+    const perPt=bid>0?(perPoint/bid):null;
+    h+='<tr style="background:'+(i%2===0?'#F9F9F9':'white')+';">';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;">'+g.name+'</td>';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:center;font-size:11px;color:#666;">'+(g.team==='US'?'🇺🇸 US':'🌐 Intl')+'</td>';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:center;">'+n+'</td>';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;">$'+bid+'</td>';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;color:#666;">'+(perPt!=null?'$'+perPt.toFixed(2):'—')+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  if(bidNonZero.length>=2){
+    const hi=bidNonZero[0],lo=bidNonZero[bidNonZero.length-1];
+    const hiBid=playerTotals[hi.name],loBid=playerTotals[lo.name];
+    const hiN=entriesPerGolfer[hi.name]||0,loN=entriesPerGolfer[lo.name]||0;
+    const hiAvg=hiN>0?hiBid/hiN:0,loAvg=loN>0?loBid/loN:0;
+    const share3=(3/totalPoints)*totalPool;
+    const hiCut=hiBid>0?(hiAvg/hiBid)*share3:0;
+    const loCut=loBid>0?(loAvg/loBid)*share3:0;
+    const ratio=(hiCut>0&&loCut>0)?(loCut/hiCut):0;
+    h+='<h3 style="color:#003D7C;margin:20px 0 6px 0;">Worked example — favorite vs. sleeper</h3>';
+    h+='<p style="color:#666;margin:0 0 10px 0;">Both golfers scoring 3 points at the current pool.</p>';
+    const mkBox=(label,g,bid,n,avg,cut,color)=>{
+      let x='<div style="padding:12px 16px;background:white;border:1px solid #ddd;border-radius:8px;margin:8px 0;">';
+      x+='<div style="font-size:11px;color:'+color+';font-weight:700;letter-spacing:0.5px;margin-bottom:4px;">'+label+'</div>';
+      x+='<div style="font-weight:700;font-size:15px;">'+g.name+' ('+(g.team==='US'?'🇺🇸 US':'🌐 Intl')+')</div>';
+      x+='<div style="font-size:12px;color:#666;margin-top:2px;">Total bid: $'+bid+' across '+n+' entrant'+(n===1?'':'s')+' · Average bid: $'+avg.toFixed(2).replace(/\.00$/,'')+'</div>';
+      x+='<div style="font-size:12px;color:#333;margin-top:4px;">3-pt pool share = (3 ÷ '+totalPoints+') × $'+totalPool.toLocaleString()+' = <strong>$'+Math.round(share3).toLocaleString()+'</strong></div>';
+      x+='<div style="font-size:12px;color:#333;margin-top:2px;">Average bid earns ($'+avg.toFixed(2).replace(/\.00$/,'')+' ÷ $'+bid+') × $'+Math.round(share3).toLocaleString()+' = <strong style="color:#006747;">$'+cut.toFixed(2).replace(/\.00$/,'')+'</strong></div>';
+      x+='</div>';return x;
+    };
+    h+=mkBox('MOST-BID GOLFER',hi,hiBid,hiN,hiAvg,hiCut,'#B22234');
+    h+=mkBox('LEAST-BID GOLFER',lo,loBid,loN,loAvg,loCut,'#003D7C');
+    if(ratio>1.5)h+='<div style="padding:10px 16px;background:#E8F5E9;border-radius:6px;margin-top:8px;font-size:13px;font-weight:600;color:#1B5E20;">Same 3 points, same $'+Math.round(share3).toLocaleString()+' pool share — but the sleeper\'s average bidder gets '+ratio.toFixed(1).replace(/\.0$/,'')+'× more than the favorite\'s.</div>';
+  }
+  h+='<p style="font-size:11px;color:#999;margin-top:20px;text-align:center;">Payouts update after each session as points are entered. See the Leaderboard for live standings.</p>';
+  h+='</div>';return h;
+}
+
+// Plain-text version of the tally for the Announce tab (mailto-friendly).
+function buildCalcuttaTallyText(){
+  const s=calcuttaScoring();
+  const {totalPool,totalPoints,playerTotals,fee}=s;
+  const entriesPerGolfer={};
+  S.entries.forEach(e=>{Object.entries(e.allocations||{}).forEach(([n,amt])=>{if((+amt||0)>0)entriesPerGolfer[n]=(entriesPerGolfer[n]||0)+1;});});
+  const sortedGolfers=[...S.golfers].sort((a,b)=>(playerTotals[b.name]||0)-(playerTotals[a.name]||0));
+  const perPoint=totalPool/totalPoints;
+  let t=S.config.name+' — Scoring Basis\n\n';
+  t+='Entries: '+S.entries.length+'\n';
+  t+='Total pool: $'+totalPool.toLocaleString()+' ('+S.entries.length+' x $'+fee+')\n';
+  t+='Each Cup point: $'+totalPool.toLocaleString()+' / '+totalPoints+' = $'+Math.round(perPoint).toLocaleString()+'\n\n';
+  t+='By golfer (sorted by total bid, descending):\n';
+  sortedGolfers.forEach(g=>{
+    const bid=playerTotals[g.name]||0;
+    const n=entriesPerGolfer[g.name]||0;
+    const perPt=bid>0?(perPoint/bid):null;
+    t+='  '+g.name+' ('+(g.team==='US'?'US':'INTL')+') — '+n+' entrant'+(n===1?'':'s')+', $'+bid+' bid'+(perPt!=null?', $'+perPt.toFixed(2)+'/pt':'')+'\n';
+  });
+  t+='\nPayouts update after each session as points are entered. See the Leaderboard for live standings.';
+  return t;
+}
+
+function rCalcuttaTally(){
+  const frag=document.createDocumentFragment();
+  const card=$('div',{className:'card'});
+  card.append($('h2',{className:'hd'},'Scoring basis / Tally'));
+  card.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'A shareable summary of the current pool: total money, bids per golfer, and a worked example. Regenerates every time you open the tab — pulls live from entries and points.'));
+  const btnRow=$('div',{style:{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'16px'}});
+  const copyBtn=$('button',{className:'btn btn-p',style:{fontSize:'13px'}},'Copy HTML');
+  copyBtn.addEventListener('click',()=>{
+    const html=buildCalcuttaTallyHTML();
+    const done=()=>{copyBtn.textContent='Copied! Paste into your email tool.';setTimeout(()=>copyBtn.textContent='Copy HTML',2500);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(html).then(done);}
+    else{const ta=document.createElement('textarea');ta.value=html;document.body.append(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();done();}
+  });
+  btnRow.append(copyBtn);
+  const goAnn=$('button',{className:'btn btn-g',style:{fontSize:'13px'}},'Send text version via Announce →');
+  goAnn.addEventListener('click',()=>{S.view='announce';S._prefillAnnounce={subj:S.config.name+' — Scoring Basis',body:buildCalcuttaTallyText()};R();window.scrollTo({top:0,behavior:'smooth'});});
+  btnRow.append(goAnn);
+  card.append(btnRow);
+  // Live preview
+  const preview=$('div',{style:{padding:'20px',background:'white',border:'1px solid var(--border)',borderRadius:'8px'}});
+  preview.innerHTML=buildCalcuttaTallyHTML();
+  card.append(preview);
+  frag.append(card);
+  return frag;
 }
 
 function rCalcuttaLeaderboard(){
@@ -1968,6 +2081,7 @@ function rAnnounce(){
 
   // Quick templates
   const templates=$('div',{style:{display:'flex',gap:'8px',marginBottom:'16px',flexWrap:'wrap'}});
+  const isCalc=S.config.gameType==='calcutta';
   const tmpl=[
     {label:'Round complete',subj:'Scores updated',body:'Round scores have been updated. Check the leaderboard to see where you stand!'},
     {label:'Cut day',subj:'The cut has been made',body:'The cut has been made. Check your entries to see if you survived!'},
@@ -1992,9 +2106,14 @@ function rAnnounce(){
     })()},
     {label:'Custom',subj:'',body:''}
   ];
+  if(isCalc){
+    tmpl.splice(2,0,{label:'Scoring basis',subj:S.config.name+' — Scoring Basis',body:buildCalcuttaTallyText()});
+  }
 
   const subjInp=$('input',{placeholder:'Subject line',style:{marginBottom:'8px'}});
   const bodyTa=$('textarea',{placeholder:'Your message...',style:{height:'120px',marginBottom:'12px'}});
+  // Prefill from Tally tab's 'Send text version via Announce' handoff.
+  if(S._prefillAnnounce){subjInp.value=S._prefillAnnounce.subj||'';bodyTa.value=S._prefillAnnounce.body||'';S._prefillAnnounce=null;}
 
   tmpl.forEach(t=>{
     templates.append($('button',{className:'btn btn-o',style:{fontSize:'12px',padding:'6px 12px'},onClick:()=>{
@@ -2648,7 +2767,7 @@ function R(){
     page.append(subDiv);
   }
   const v=S.view;
-  if(S.isAdmin){if(v==='setup')page.append(rSetup());if(v==='golfers')page.append(rGolfers());if(v==='entries'){page.append(rEntryForm(true));page.append(rEntryList(true));}if(v==='scores'){page.append(rScores());}if(v==='leaderboard')page.append(rLeaderboard());if(v==='payouts')page.append(rPayouts());if(v==='announce')page.append(rAnnounce());if(v==='archive')page.append(rArchive());if(v==='whatif')page.append(rWhatIf());}
+  if(S.isAdmin){if(v==='setup')page.append(rSetup());if(v==='golfers')page.append(rGolfers());if(v==='entries'){page.append(rEntryForm(true));page.append(rEntryList(true));}if(v==='scores'){page.append(rScores());}if(v==='leaderboard')page.append(rLeaderboard());if(v==='tally')page.append(rCalcuttaTally());if(v==='payouts')page.append(rPayouts());if(v==='announce')page.append(rAnnounce());if(v==='archive')page.append(rArchive());if(v==='whatif')page.append(rWhatIf());}
   else{if(v==='leaderboard')page.append(rLeaderboard());if(v==='enter'){page.append(rEntryForm(false));page.append(rEntryList(false));}if(v==='whatif')page.append(rWhatIf());if(v==='rules')page.append(rRules());}
   app.append(page);
 }
