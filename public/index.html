@@ -1517,9 +1517,16 @@ function printQRCard(){
   w.document.write('<div style="margin-bottom:8px;"><svg width="200" height="55" viewBox="0 0 180 50"><text x="78" y="30" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="36" fill="#006747">best<tspan fill="#FFD700">4</tspan></text><line x1="20" y1="36" x2="155" y2="36" stroke="#006747" stroke-width="1.5"/><text x="78" y="47" text-anchor="middle" font-family="Georgia,serif" font-weight="600" font-size="16" fill="#999">.golf</text><line x1="148" y1="10" x2="148" y2="36" stroke="#006747" stroke-width="1.5"/><polygon points="148,10 163,15 148,20" fill="#FFD700"/></svg></div>');w.document.write('<h1>'+S.config.name+'</h1>');
   w.document.write('<div class="course">'+S.config.course+'</div>');
   w.document.write('<div class="qr-wrap" id="qr"></div>');
-  w.document.write('<div class="instructions">Scan to enter the pool &rarr; tap <strong>Player</strong><br>$'+S.config.mainFee+' per entry &bull; Pick '+S.config.numPicks+' golfers<br>Top 3 pay out</div>');
-  w.document.write('<div class="tagline">Good luck!</div>');
-  w.document.write('<div class="gold">Pick the Winner side pool: $'+S.config.pickFee+'</div>');
+  if(S.config.gameType==='calcutta'){
+    const tbf=(S.config.pickTeamFee|0)||10;
+    w.document.write('<div class="instructions">Scan to enter the pool &rarr; tap <strong>Player</strong><br>$'+S.config.mainFee+' per entry &bull; Spread across 24 players<br>Payout by points earned</div>');
+    w.document.write('<div class="tagline">Good luck!</div>');
+    w.document.write('<div class="gold">Optional $'+tbf+' side bet: pick the winning team</div>');
+  } else {
+    w.document.write('<div class="instructions">Scan to enter the pool &rarr; tap <strong>Player</strong><br>$'+S.config.mainFee+' per entry &bull; Pick '+S.config.numPicks+' golfers<br>Top 3 pay out</div>');
+    w.document.write('<div class="tagline">Good luck!</div>');
+    w.document.write('<div class="gold">Pick the Winner side pool: $'+S.config.pickFee+'</div>');
+  }
   w.document.write('</div>');
   w.document.write('<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></scr'+'ipt>');
   w.document.write('<scr'+'ipt>new QRCode(document.getElementById("qr"),{text:"'+S.config.appUrl+'",width:180,height:180,colorDark:"#006747",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});setTimeout(function(){window.print();},500);</scr'+'ipt>');
