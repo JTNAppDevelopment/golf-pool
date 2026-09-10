@@ -84,6 +84,9 @@ td.left { text-align: left; }
 const SKEY="golf-pool-v1";
 const DEF={name:"2025 Masters",course:"Augusta National Golf Club",par:72,numPicks:5,mainFee:100,pickFee:15,splits:[50,30,20],locked:false,deadline:"",winnerGolfer:"",winnerScore:null,publishedRounds:[false,false,false,false],appUrl:"",commEmail:"",venmoHandle:"",zelleHandle:"",acceptCash:true,commissionerName:"",gameType:"stroke_play"};
 // 2026 Presidents Cup field at Medinah, Sept 22-27. Names as ESPN/PGA Tour display them.
+// Presidents Cup has 5 scoring sessions; max 1 pt per golfer per session (2 pts possible
+// on Saturday since he can play both formats — modeled as two separate sessions).
+const CALCUTTA_SESSIONS=['Thu 4B','Fri FS','Sat 4B','Sat FS','Sun'];
 const PRESIDENTS_CUP_FIELD=[
   {name:'Scottie Scheffler',team:'US'},
   {name:'Cameron Young',team:'US'},
@@ -1079,22 +1082,40 @@ function buildCalcuttaTallyHTML(){
   h+='<div style="margin:0;"><strong>Each Cup point =</strong> $'+totalPool.toLocaleString()+' ÷ '+totalPoints+' = <strong>$'+Math.round(perPoint).toLocaleString()+'</strong></div>';
   if(ptwEntries.length>0)h+='<div style="margin:6px 0 0 0;"><strong>Team-bet side pool:</strong> $'+ptwPool.toLocaleString()+' ('+ptwEntries.length+' entrants × $'+pickTeamFee+')</div>';
   h+='</div>';
+  const nSessions=CALCUTTA_SESSIONS.length;
   h+='<h3 style="color:#003D7C;margin:16px 0 8px 0;">By golfer</h3>';
-  h+='<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-  h+='<thead><tr style="background:#003D7C;color:white;"><th style="padding:6px 8px;text-align:left;">Golfer</th><th style="padding:6px 8px;">Team</th><th style="padding:6px 8px;">Entrants</th><th style="padding:6px 8px;">Total bid</th><th style="padding:6px 8px;">$/point</th></tr></thead><tbody>';
+  h+='<p style="color:#666;margin:0 0 8px 0;font-size:12px;">Per-session points populate as the Cup unfolds. <strong>Paid/rd</strong> = total bid ÷ '+nSessions+' (constant). <strong>$ won / $1 bid</strong> = realized return so far per $1 bid on that golfer.</p>';
+  h+='<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px;">';
+  let head='<thead><tr style="background:#003D7C;color:white;">'+
+    '<th style="padding:6px 8px;text-align:left;">Golfer</th>'+
+    '<th style="padding:6px 8px;">Team</th>'+
+    '<th style="padding:6px 8px;">Entrants</th>'+
+    '<th style="padding:6px 8px;">Total bid</th>'+
+    '<th style="padding:6px 8px;">Paid/rd</th>';
+  CALCUTTA_SESSIONS.forEach(s=>{head+='<th style="padding:6px 4px;font-size:11px;">'+s+'</th>';});
+  head+='<th style="padding:6px 8px;">Total pts</th>'+
+    '<th style="padding:6px 8px;">$ won/$1</th>'+
+    '</tr></thead>';
+  h+=head+'<tbody>';
   sortedGolfers.forEach((g,i)=>{
     const bid=playerTotals[g.name]||0;
     const n=entriesPerGolfer[g.name]||0;
-    const perPt=bid>0?(perPoint/bid):null;
+    const pts=playerPoints[g.name]||0;
+    const paidRd=bid/nSessions;
+    const wonPer1=bid>0?(pts*perPoint/bid):null;
+    const rp=Array.isArray(g.roundPoints)?g.roundPoints:[null,null,null,null,null];
     h+='<tr style="background:'+(i%2===0?'#F9F9F9':'white')+';">';
     h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;">'+g.name+'</td>';
-    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:center;font-size:11px;color:#666;">'+(g.team==='US'?'🇺🇸 US':'🌐 Intl')+'</td>';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:center;font-size:11px;color:#666;">'+(g.team==='US'?'🇺🇸':'🌐')+'</td>';
     h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:center;">'+n+'</td>';
     h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;">$'+bid+'</td>';
-    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;color:#666;">'+(perPt!=null?'$'+perPt.toFixed(2):'—')+'</td>';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;color:#666;">'+(bid>0?'$'+paidRd.toFixed(2).replace(/\.00$/,''):'—')+'</td>';
+    rp.forEach(pv=>{h+='<td style="padding:5px 4px;border-bottom:1px solid #ddd;text-align:center;font-size:11px;color:'+(pv>0?'#006747':'#bbb')+';font-weight:'+(pv>0?'700':'400')+';">'+(pv!=null&&pv>0?pv.toFixed(1).replace(/\.0$/,''):'—')+'</td>';});
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:center;font-weight:'+(pts>0?'700':'400')+';color:'+(pts>0?'#006747':'#999')+';">'+(pts>0?pts.toFixed(1).replace(/\.0$/,''):'0')+'</td>';
+    h+='<td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;color:'+(wonPer1!=null?(wonPer1>=1?'#006747':'#666'):'#bbb')+';">'+(wonPer1!=null?'$'+wonPer1.toFixed(2):'—')+'</td>';
     h+='</tr>';
   });
-  h+='</tbody></table>';
+  h+='</tbody></table></div>';
   if(bidNonZero.length>=2){
     const hi=bidNonZero[0],lo=bidNonZero[bidNonZero.length-1];
     const hiBid=playerTotals[hi.name],loBid=playerTotals[lo.name];
@@ -1126,21 +1147,26 @@ function buildCalcuttaTallyHTML(){
 // Plain-text version of the tally for the Announce tab (mailto-friendly).
 function buildCalcuttaTallyText(){
   const s=calcuttaScoring();
-  const {totalPool,totalPoints,playerTotals,fee}=s;
+  const {totalPool,totalPoints,playerTotals,playerPoints,fee}=s;
   const entriesPerGolfer={};
   S.entries.forEach(e=>{Object.entries(e.allocations||{}).forEach(([n,amt])=>{if((+amt||0)>0)entriesPerGolfer[n]=(entriesPerGolfer[n]||0)+1;});});
   const sortedGolfers=[...S.golfers].sort((a,b)=>(playerTotals[b.name]||0)-(playerTotals[a.name]||0));
   const perPoint=totalPool/totalPoints;
+  const nSessions=CALCUTTA_SESSIONS.length;
   let t=S.config.name+' — Scoring Basis\n\n';
   t+='Entries: '+S.entries.length+'\n';
   t+='Total pool: $'+totalPool.toLocaleString()+' ('+S.entries.length+' x $'+fee+')\n';
   t+='Each Cup point: $'+totalPool.toLocaleString()+' / '+totalPoints+' = $'+Math.round(perPoint).toLocaleString()+'\n\n';
-  t+='By golfer (sorted by total bid, descending):\n';
+  t+='By golfer (sorted by total bid descending). Columns: Entrants, Total bid, Paid/rd, '+CALCUTTA_SESSIONS.join(' / ')+', Total pts, $ won per $1 bid.\n\n';
   sortedGolfers.forEach(g=>{
     const bid=playerTotals[g.name]||0;
     const n=entriesPerGolfer[g.name]||0;
-    const perPt=bid>0?(perPoint/bid):null;
-    t+='  '+g.name+' ('+(g.team==='US'?'US':'INTL')+') — '+n+' entrant'+(n===1?'':'s')+', $'+bid+' bid'+(perPt!=null?', $'+perPt.toFixed(2)+'/pt':'')+'\n';
+    const pts=playerPoints[g.name]||0;
+    const paidRd=bid/nSessions;
+    const wonPer1=bid>0?(pts*perPoint/bid):null;
+    const rp=Array.isArray(g.roundPoints)?g.roundPoints:[null,null,null,null,null];
+    const perSess=rp.map(pv=>pv!=null&&pv>0?pv.toFixed(1).replace(/\.0$/,''):'—').join(' / ');
+    t+='  '+g.name+' ('+(g.team==='US'?'US':'INTL')+') — '+n+' entrant'+(n===1?'':'s')+', $'+bid+' bid, $'+paidRd.toFixed(2).replace(/\.00$/,'')+'/rd, '+perSess+', total '+(pts>0?pts.toFixed(1).replace(/\.0$/,''):'0')+' pts'+(wonPer1!=null?', $'+wonPer1.toFixed(2)+' won per $1':'')+'\n';
   });
   t+='\nPayouts update after each session as points are entered. See the Leaderboard for live standings.';
   return t;
@@ -1259,22 +1285,27 @@ function rCalcuttaLeaderboard(){
     pCard.append($('h3',{className:'hd',style:{fontSize:'16px'}},'By golfer'));
     pCard.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Total dollars bid on each golfer, number of entrants who backed him, and the implied payout per Cup point.'));
     const w2=$('div',{className:'overflow-x'}),tbl2=$('table');
-    tbl2.append($('thead',null,$('tr',null,$('th',{className:'left'},'Golfer'),$('th',null,'Team'),$('th',null,'Entrants'),$('th',null,'Total bid'),$('th',null,'Points'),$('th',null,'$ / point'))));
+    tbl2.append($('thead',null,$('tr',null,$('th',{className:'left'},'Golfer'),$('th',null,'Team'),$('th',null,'Entrants'),$('th',null,'Total bid'),$('th',null,'Paid/rd'),$('th',null,'Points'),$('th',null,'$ won / $1 bid'))));
     const tb2=$('tbody');
     // Sort by total $ bid descending — market ranking of who the crowd likes.
     const sortedGolfers=[...S.golfers].sort((a,b)=>(playerTotals[b.name]||0)-(playerTotals[a.name]||0));
+    const perPoint=totalPool/totalPoints;
+    const nSessions=CALCUTTA_SESSIONS.length;
     sortedGolfers.forEach(g=>{
       const bid=playerTotals[g.name]||0;
       const nEntrants=entriesPerGolfer[g.name]||0;
       const pts=playerPoints[g.name]||0;
-      const perPt=bid>0?((1/totalPoints)*totalPool/bid):null;
+      const paidRd=bid/nSessions;
+      // $ won per $1 bid so far = cumulative_pts × perPoint ÷ total_bid
+      const wonPer1=bid>0?(pts*perPoint/bid):null;
       const row=$('tr');
       row.append($('td',{className:'left',style:{fontWeight:'600'}},g.name));
       row.append($('td',{style:{fontSize:'11px',color:'var(--med)'}},g.team==='US'?'🇺🇸 US':'🌐 Intl'));
       row.append($('td',null,String(nEntrants)));
       row.append($('td',{style:{fontWeight:'600'}},'$'+bid));
+      row.append($('td',{style:{fontSize:'12px',color:'var(--med)'}},bid>0?'$'+paidRd.toFixed(2).replace(/\.00$/,''):'—'));
       row.append($('td',{style:{fontWeight:pts>0?'700':'400',color:pts>0?'var(--green)':'var(--med)'}},pts>0?pts.toFixed(1).replace(/\.0$/,''):'0'));
-      row.append($('td',{style:{fontSize:'12px',color:'var(--med)'}},perPt!=null?'$'+perPt.toFixed(2):'—'));
+      row.append($('td',{style:{fontSize:'12px',fontWeight:'600',color:wonPer1!=null?(wonPer1>=1?'var(--green)':'var(--med)'):'var(--med)'}},wonPer1!=null?'$'+wonPer1.toFixed(2):'—'));
       tb2.append(row);
     });
     tbl2.append(tb2);w2.append(tbl2);pCard.append(w2);
@@ -1422,7 +1453,7 @@ function rCalcuttaScores(){
   const {totalPoints,pointsScored}=calcuttaScoring();
   const card=$('div',{className:'card'});
   card.append($('h2',{className:'hd'},'Enter points'));
-  card.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Enter each player\'s cumulative Presidents Cup points. Ties = 0.5 each. Total: '+pointsScored.toFixed(1).replace(/\.0$/,'')+' / '+totalPoints+' points.'));
+  card.append($('p',{className:'sub',style:{margin:'4px 0 12px 0'}},'Enter each golfer\'s points per session — max 1 per session (0.5 for a tie). Total: '+pointsScored.toFixed(1).replace(/\.0$/,'')+' / '+totalPoints+'.'));
   // Winning-team selector for the optional side bet
   const teamBetFee=(S.config.pickTeamFee|0)||10;
   const wtWrap=$('div',{style:{padding:'12px 16px',background:'var(--gray)',borderRadius:'8px',margin:'0 0 12px 0'}});
@@ -1436,20 +1467,37 @@ function rCalcuttaScores(){
   card.append(wtWrap);
   const buildTeam=(label,teamKey,color)=>{
     card.append($('div',{style:{background:color,color:'white',padding:'8px 12px',borderRadius:'6px',fontWeight:'700',fontSize:'13px',letterSpacing:'0.5px',margin:'16px 0 8px 0'}},label));
-    const grid=$('div',{style:{display:'grid',gridTemplateColumns:'1fr auto',gap:'6px 12px',alignItems:'center'}});
-    S.golfers.filter(g=>g.team===teamKey).forEach((g,i)=>{
+    const wrap=$('div',{className:'overflow-x'});
+    const grid=$('div',{style:{display:'grid',gridTemplateColumns:'minmax(140px,1fr) repeat(5, 52px) 52px',gap:'4px 6px',alignItems:'center',minWidth:'520px'}});
+    // Header row
+    grid.append($('div',{style:{fontSize:'11px',color:'var(--med)',fontWeight:'600'}},'Golfer'));
+    CALCUTTA_SESSIONS.forEach(s=>grid.append($('div',{style:{fontSize:'10px',color:'var(--med)',fontWeight:'600',textAlign:'center'}},s)));
+    grid.append($('div',{style:{fontSize:'11px',color:'var(--med)',fontWeight:'600',textAlign:'center'}},'Total'));
+    S.golfers.filter(g=>g.team===teamKey).forEach(g=>{
       const idx=S.golfers.indexOf(g);
-      grid.append($('div',{style:{fontSize:'14px',fontWeight:'500',padding:'6px 0'}},g.name));
-      const inp=$('input',{type:'number',min:'0',step:'0.5',placeholder:'0',value:g.points?String(g.points):'',style:{width:'80px',padding:'6px 8px',borderRadius:'4px',border:'1px solid var(--border)',textAlign:'right',fontSize:'14px'}});
-      inp.addEventListener('change',()=>{S.golfers[idx].points=inp.value===''?0:parseFloat(inp.value);save();R();});
-      grid.append(inp);
+      // Lazy-init the per-session roundPoints array on legacy golfer records.
+      if(!Array.isArray(S.golfers[idx].roundPoints))S.golfers[idx].roundPoints=[null,null,null,null,null];
+      grid.append($('div',{style:{fontSize:'13px',fontWeight:'500',padding:'4px 0'}},g.name));
+      for(let s=0;s<5;s++){
+        const cur=S.golfers[idx].roundPoints[s];
+        const inp=$('input',{type:'number',min:'0',max:'1',step:'0.5',placeholder:'0',value:cur!=null?String(cur):'',style:{width:'100%',padding:'4px',borderRadius:'4px',border:'1px solid var(--border)',textAlign:'center',fontSize:'13px'}});
+        inp.addEventListener('change',()=>{
+          const v=inp.value===''?null:parseFloat(inp.value);
+          S.golfers[idx].roundPoints[s]=v;
+          S.golfers[idx].points=S.golfers[idx].roundPoints.reduce((sum,p)=>sum+(+p||0),0);
+          save();R();
+        });
+        grid.append(inp);
+      }
+      const totalG=S.golfers[idx].roundPoints.reduce((sum,p)=>sum+(+p||0),0);
+      grid.append($('div',{style:{fontWeight:'700',textAlign:'center',color:totalG>0?'var(--green)':'var(--med)',fontSize:'13px'}},totalG>0?totalG.toFixed(1).replace(/\.0$/,''):'0'));
     });
-    card.append(grid);
+    wrap.append(grid);card.append(wrap);
   };
   buildTeam('🇺🇸  U.S. TEAM','US','#B22234');
   buildTeam('🌐  INTERNATIONAL TEAM','INTL','#003D7C');
   // Zero-out button
-  const zero=$('button',{className:'btn btn-o',style:{marginTop:'16px',fontSize:'12px'},onClick:()=>{if(!confirm('Reset all points to 0?'))return;S.golfers.forEach(g=>g.points=0);save();R();}},'Reset all points to 0');
+  const zero=$('button',{className:'btn btn-o',style:{marginTop:'16px',fontSize:'12px'},onClick:()=>{if(!confirm('Reset all points and per-session data to 0?'))return;S.golfers.forEach(g=>{g.points=0;g.roundPoints=[null,null,null,null,null];});save();R();}},'Reset all points to 0');
   card.append(zero);
   frag.append(card);
   return frag;
