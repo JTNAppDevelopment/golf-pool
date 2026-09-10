@@ -1995,14 +1995,14 @@ function getCalcuttaRulesHTML(c,payStr,dl){
           return '<strong>Example</strong> (50 entrants &times; $'+fee+' = $'+pool.toLocaleString()+' pool):'+
           '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;margin:10px 0 0 0;">'+
             '<tr>'+
-              '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
+              '<td style="width:50%;vertical-align:middle;text-align:center;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
                 '<div style="font-weight:700;color:#B22234;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">FAVORITE</div>'+
                 '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Scheffler scores 4 pts</div>'+
                 '<div>Pool share = (4&divide;30) &times; $'+pool.toLocaleString()+' = <strong>$'+money(shareFav)+'</strong></div>'+
                 '<div style="margin-top:6px;">Total bid on him: $1,000. You put $25.</div>'+
                 '<div>Your cut = ($25 &divide; $1,000) &times; $'+money(shareFav)+' = <strong style="color:#006747;">$'+money(cutFav)+'</strong></div>'+
               '</td>'+
-              '<td style="width:50%;vertical-align:top;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
+              '<td style="width:50%;vertical-align:middle;text-align:center;padding:12px 14px;background:white;border:1px solid #ddd;border-radius:8px;font-size:13px;line-height:1.5;">'+
                 '<div style="font-weight:700;color:#003D7C;letter-spacing:0.4px;font-size:11px;margin-bottom:4px;">SLEEPER</div>'+
                 '<div style="font-weight:700;font-size:15px;margin-bottom:6px;">Bezuidenhout scores 3 pts</div>'+
                 '<div>Pool share = (3&divide;30) &times; $'+pool.toLocaleString()+' = <strong>$'+money(shareSlp)+'</strong></div>'+
@@ -2059,6 +2059,8 @@ function getCalcuttaRulesHTML(c,payStr,dl){
 function printRules(){
   const w=window.open('','_blank','width=700,height=900');
   w.document.write('<!DOCTYPE html><html><head><title>Pool Rules</title><style>');
+  // Force background colors to print (browsers strip them by default to save ink).
+  w.document.write('*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}');
   w.document.write('body{margin:0;padding:12px 16px;font-family:Georgia,serif;}');
   w.document.write('.print-hide{display:none;}');
   w.document.write('#qr-print{display:flex;justify-content:center;margin:12px 0 6px 0;}');
