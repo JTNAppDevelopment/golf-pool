@@ -2582,7 +2582,9 @@ function R(){
   if(!S.loaded){app.append($('div',{style:{textAlign:'center',padding:'80px',color:'var(--med)'}},'Loading...'));return;}
   if(S.mode===null){app.append($('div',{className:'page'},rLanding()));return;}
   if(S.mode==='admin'&&!S.isAdmin){app.append($('div',{className:'page'},rPin()));return;}
-  if(S.mode==='player'&&!S.playerEmail){app.append($('div',{className:'page'},rPlayerSignin()));return;}
+  // Player sign-in is optional: only forced on views that filter to 'my' data (leaderboard/enter/whatif).
+  // Rules is public and needs no personalization, so a mobile visitor tapping Player lands on Rules directly.
+  if(S.mode==='player'&&!S.playerEmail&&S.view!=='rules'){app.append($('div',{className:'page'},rPlayerSignin()));return;}
   app.append(rTopbar());const page=$('div',{className:'page'});
   if(S.config.name){
     const subDiv=$('div',{style:{textAlign:'center',margin:'-12px 0 16px'}});
